@@ -14,6 +14,7 @@ const ssllabs = require("node-ssllabs");
 //Check if sitemap is exits
 //Check if robot files exists
 //SSLLabs Integration
+//DOCType Check
 
 module.exports = (url, body) => {
   const $ = cheerio.load(body), page = {};
@@ -22,6 +23,7 @@ module.exports = (url, body) => {
   page.description = $('meta[name=description]').attr('content') || null;
   page.author = $('meta[name=author]').attr('content') || null;
   page.keywords = $('meta[name=keywords]').attr('content') || null;
+  page.containsDocType = body.toLowerCase().lastIndexOf('<!doctype html>') !== -1;
 
   const testSSLCertificate = () => {
     const init = (resolve, reject) => {
