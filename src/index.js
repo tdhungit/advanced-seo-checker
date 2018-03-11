@@ -4,9 +4,10 @@ const path = require('path');
 const parseURL = require('url-parse');
 const cheerio = require('cheerio');
 const request = require('request');
-const normalizeUrl = require('normalize-url');
 const eachSeries = require('async/eachSeries');
 const compareUrls = require('compare-urls');
+const urlExists = require('url-exists');
+const normalizeUrl = require('normalize-url');
 const mitt = require('mitt');
 const createCrawler = require('./createCrawler');
 const analyzePage = require('./analyzePage');
@@ -19,11 +20,9 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     userAgent: 'Node/AdvancedSEOChecker',
     respectRobotsTxt: true,
     timeout: 30000,
-    maxConcurrency: 1,
-    downloadUnsupported: false,
-    discoverResources
+    maxConcurrency: 5,
+    downloadUnsupported: false
   };
-  const parsedPages = [];         // Store parsed pages in this array
   const crawlResults = []; // Store results in this array and then return it to caller
 
   if (!uri) {
@@ -48,12 +47,16 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
   const stop = () => {
     crawler.stop();
   };
-  const load = (url, callback) => {
+
+  const getValidatedURL = (url) => {
     // Check if user input protocol
     if (url.indexOf('http://') < 0 && url.indexOf('https://') < 0) { // TODO: Turn this into its own function
       url = 'http://' + url;
     }
-
+    return url;
+  }
+  const load = (url, callback) => {
+    url = getValidatedURL(url);
     // Make request and fire callback
     request.get(url.toLowerCase(), function (error, response, body) {
       if (!error && response.statusCode === 200) {
@@ -62,6 +65,27 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
 
       return callback(false);
     });
+  };
+
+  const validateSitemap = () => {
+    let url = parsedUrl.href;
+    const init = (resolve, reject) => {
+      urlExists(normalizeUrl(url) + '/sitemap.xml', function (err, exists) {
+        resolve(exists);
+      });
+    };
+    let promise = new Promise(init);
+    return promise;
+  };
+  const validateRobots = () => {
+    let url = parsedUrl.href;
+    const init = (resolve, reject) => {
+      urlExists(normalizeUrl(url) + '/robots.txt', function (err, exists) {
+        resolve(exists);
+      });
+    };
+    let promise = new Promise(init);
+    return promise;
   };
 
   const emitError = (code, url) => {
@@ -83,25 +107,23 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     return promise;
   };
   const onComplete = () => {
-    crawlResults.forEach(function (page, index, results) {
-      const summary = {url: page.url};
-      analyzePage(page.url, page.body).then((p) => {
-        for (let key of p) {
-          console.log(key);
-          summary[key] = p[key];
-        }
-      });
-      parsedPages.push(summary);
+    let res = {};
+    validateSitemap().then(function (result) {
+      res.containSitemap = result;
     });
-    while (true) {
-      const allAnalyzed = parsedPages.filter((page) => {
-        return !page.analyzed;
-      }).length;
-      if (!allAnalyzed) {
-        break;
-      }
-    }
-    emitter.emit('done', parsedPages);
+    validateRobots().then(function (result) {
+      res.containRobots = result;
+    });
+
+    const promises = [];
+    crawlResults.forEach(function (page, index, results) {
+      promises.push(analyzePage(page.url, page.body));
+    });
+
+    Promise.all(promises).then(function (pages) {
+      res.pages = pages;
+      emitter.emit('done', res);
+    });
   };
   crawler.on('fetch404', ({url}) => emitError(404, url));
   crawler.on('fetchtimeout', ({url}) => emitError(408, url));
@@ -132,6 +154,7 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     }
   });
   crawler.on('complete', (queueItem, responseBuffer, response) => {
+    console.log('Crawling complete');
     onComplete();
   });
   return {

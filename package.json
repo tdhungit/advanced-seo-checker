@@ -32,6 +32,7 @@
     "path": "^0.12.7",
     "request": "^2.83.0",
     "simplecrawler": "^1.1.6",
+    "url-exists": "^1.0.3",
     "url-parse": "^1.2.0",
     "valid-url": "^1.0.9"
   },

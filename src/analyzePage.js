@@ -1,9 +1,20 @@
 const cheerio = require('cheerio')
 const blc = require('broken-link-checker');
 
+
+//TESTS COVERED
+//Missing title tag
+//Missing description tag
+//Missing keywords tag
+//Missing author tag
+//Broken links
+//Broken Images
+//Too much text in title
+//Duplicate h1 tag
+
 module.exports = (url, body) => {
-  const $ = cheerio.load(body), page = {analyzed: false};
-  // Meta signals
+  const $ = cheerio.load(body), page = {};
+  page.url = url;
   page.title = $('title').text() || null;
   page.description = $('meta[name=description]').attr('content') || null;
   page.author = $('meta[name=author]').attr('content') || null;
@@ -18,22 +29,27 @@ module.exports = (url, body) => {
     return (accessibleImgs / totalImgs) * 100;
   };
 
+  const testTooMuchTextInTitle = () => {
+    return page.title.length <= 75;
+  };
+
   const countH1 = () => {
     return $('h1').length;
   };
 
   const discoverBrokenLinks = () => {
     const init = (resolve, reject) => {
-      const broken = [], total = [];
+      const broken = {}, total = {};
       var htmlChecker = new blc.HtmlChecker({}, {
-        html: function (tree, robots) {
-        },
-        junk: function (result) {
-        },
         link: function (result) {
-          total.push(result);
+          if (!total[result.html.tagName]) {
+            total[result.html.tagName] = [];
+            broken[result.html.tagName] = [];
+          }
+
+          total[result.html.tagName].push(result);
           if (result.broken) {
-            broken.push(result);
+            broken[result.html.tagName].push(result);
           }
         },
         complete: function (result) {
@@ -53,13 +69,13 @@ module.exports = (url, body) => {
   const init = (resolve, reject) => {
     page.heading1 = $('body h1:first-child').text().trim().replace('\n', '');
     page.totalHeadings = countH1();
-
+    page.tooMuchTextInTitle = testTooMuchTextInTitle();
     page.imgAccessibility = testAccessibleImgs();
+
     discoverBrokenLinks().then((result) => {
       page.blc = result;
-      page.linksAccessibility = 100 - 100 * page.blc.broken.length / page.blc.total.length;
-
-      page.analyzed = true;
+      page.linksAvailability = 100 - 100 * page.blc.broken.a.length / page.blc.total.a.length;
+      page.imagesAvailability = 100 - 100 * page.blc.broken.img.length / page.blc.total.img.length;
       resolve(page);
     });
   };
