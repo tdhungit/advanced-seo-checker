@@ -72,7 +72,6 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     });
   };
 
-
   const addURL = (url, body) => {
     const init = (resolve, reject) => {
       let urlObj = {url: url, body: body};
