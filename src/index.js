@@ -82,7 +82,27 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     let promise = new Promise(init);
     return promise;
   };
-
+  const onComplete = () => {
+    crawlResults.forEach(function (page, index, results) {
+      const summary = {url: page.url};
+      analyzePage(page.url, page.body).then((p) => {
+        for (let key of p) {
+          console.log(key);
+          summary[key] = p[key];
+        }
+      });
+      parsedPages.push(summary);
+    });
+    while (true) {
+      const allAnalyzed = parsedPages.filter((page) => {
+        return !page.analyzed;
+      }).length;
+      if (!allAnalyzed) {
+        break;
+      }
+    }
+    emitter.emit('done', parsedPages);
+  };
   crawler.on('fetch404', ({url}) => emitError(404, url));
   crawler.on('fetchtimeout', ({url}) => emitError(408, url));
   crawler.on('fetch410', ({url}) => emitError(410, url));
@@ -112,10 +132,7 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     }
   });
   crawler.on('complete', (queueItem, responseBuffer, response) => {
-    crawlResults.forEach(function (page, index, results) {
-      parsedPages.push({url: page.url, results: analyzePage(page.body)});
-    });
-    emitter.emit('done', parsedPages);
+    onComplete();
   });
   return {
     on: emitter.on,

@@ -24,6 +24,7 @@
   "homepage": "https://github.com/hazemhagrass/advanced-seo-checker/",
   "dependencies": {
     "async": "^2.6.0",
+    "broken-link-checker": "^0.7.7",
     "cheerio": "^1.0.0-rc.2",
     "compare-urls": "^2.0.0",
     "mitt": "^1.1.3",
