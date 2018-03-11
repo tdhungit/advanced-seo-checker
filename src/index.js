@@ -2,13 +2,14 @@ const fs = require('fs');
 const http = require('http');
 const path = require('path');
 const parseURL = require('url-parse');
-const cheerio = require('cheerio')
+const cheerio = require('cheerio');
 const request = require('request');
 const normalizeUrl = require('normalize-url');
 const eachSeries = require('async/eachSeries');
 const compareUrls = require('compare-urls');
-
+const mitt = require('mitt');
 const createCrawler = require('./createCrawler');
+const analyzePage = require('./analyzePage');
 const isValidURL = require('./helpers/isValidURL');
 const discoverResources = require('./discoverResources');
 
@@ -18,16 +19,19 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     userAgent: 'Node/AdvancedSEOChecker',
     respectRobotsTxt: true,
     timeout: 30000,
-    maxPages: 1,
     maxConcurrency: 1,
     downloadUnsupported: false,
     discoverResources
   };
+  const parsedPages = [];         // Store parsed pages in this array
+  const crawlResults = []; // Store results in this array and then return it to caller
+
   if (!uri) {
     throw new Error('Requires a valid URL.');
   }
 
   const options = Object.assign({}, defaultOpts, opts);
+  const emitter = mitt();
   const parsedUrl = parseURL(
     normalizeUrl(uri, {
       stripWWW: false,
@@ -35,65 +39,91 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     })
   );
 
-  /**
-   * Parse meta data from an HTTP response body
-   *
-   * `body` [String] - The HTML of a web page to parse
-   *
-   * Returns an object containing data related to the SEO
-   * signals of the page that was parsed. Pass the result to
-   * another function to determine an "SEO score".
-   */
-  const meta = () => {
-    var $ = cheerio.load(body),
-      page = {};
+  const crawler = createCrawler(parsedUrl, options);
 
-    // Meta signals
-    page.title = $('title').text() || null;
-    page.description = $('meta[name=description]').attr('content') || null;
-    page.author = $('meta[name=author]').attr('content') || null;
-    page.keywords = $('meta[name=keywords]').attr('content') || null;
-
-    // Heading signals
-    var h1s = 0;
-    $('h1').each(function () {
-      h1s++;
-    });
-    page.heading1 = $('body h1:first-child').text().trim().replace('\n', '');
-    page.totalHeadings = h1s;
-
-    // Accessibility signals
-    var totalImgs = 0,
-      accessibleImgs = 0;
-    $('img').each(function (index) {
-      totalImgs++;
-      if ($(this).attr('alt') || $(this).attr('title')) {
-        accessibleImgs++;
-      }
-    });
-    page.imgAccessibility = (accessibleImgs / totalImgs) * 100;
-    return page;
+  const start = () => {
+    crawler.start();
   };
 
-  const crawler = createCrawler(parsedUrl, options);
-  const parsedPages = [];         // Store parsed pages in this array
-  const seoParser = this.meta;  // Reference to `meta` method to call during crawl
-  const crawlResults = []; // Store results in this array and then return it to caller
-
-  crawler.on('fetchcomplete', (queueItem, responseBuffer, response) => {
-    if (queueItem.stateData.code === 200) {
-      crawlResults.push({url: queueItem.url, body: responseBuffer.toString()});
+  const stop = () => {
+    crawler.stop();
+  };
+  const load = (url, callback) => {
+    // Check if user input protocol
+    if (url.indexOf('http://') < 0 && url.indexOf('https://') < 0) { // TODO: Turn this into its own function
+      url = 'http://' + url;
     }
-    if (crawlResults.length >= maxPages) {
-      this.stop(); // Stop the crawler
-      crawlResults.forEach(function (page, index, results) {
-        parsedPages.push({url: page.url, results: seoParser(page.body)});
-      });
-      if (!callback) {
-        return parsedPages;
-      } else {
-        callback(parsedPages);
+
+    // Make request and fire callback
+    request.get(url.toLowerCase(), function (error, response, body) {
+      if (!error && response.statusCode === 200) {
+        return callback(body);
       }
+
+      return callback(false);
+    });
+  };
+
+  const emitError = (code, url) => {
+    emitter.emit('error', {
+      code,
+      message: http.STATUS_CODES[code],
+      url
+    });
+  };
+
+
+  const addURL = (url, body) => {
+    const init = (resolve, reject) => {
+      let urlObj = {url: url, body: body};
+      crawlResults.push(urlObj);
+      resolve(crawlResults[crawlResults.length - 1]);
+    };
+
+    let promise = new Promise(init);
+    return promise;
+  };
+
+  crawler.on('fetch404', ({url}) => emitError(404, url));
+  crawler.on('fetchtimeout', ({url}) => emitError(408, url));
+  crawler.on('fetch410', ({url}) => emitError(410, url));
+  crawler.on('fetcherror', (queueItem, response) =>
+    emitError(response.statusCode, queueItem.url)
+  );
+
+  crawler.on('fetchclienterror', (queueError, errorData) => {
+    if (errorData.code === 'ENOTFOUND') {
+      throw new Error(`Site "${parsedUrl.href}" could not be found.`);
+    } else {
+      emitError(400, errorData.message);
     }
   });
+
+  crawler.on('fetchdisallowed', ({url}) => emitter.emit('ignore', url));
+
+  crawler.on('fetchcomplete', (queueItem, responseBuffer, response) => {
+    let url = queueItem.url;
+    if (/<meta(?=[^>]+noindex).*?>/.test(responseBuffer)) {
+      emitter.emit('ignore', url);
+    } else if (isValidURL(url)) {
+      emitter.emit('add', url);
+      addURL(url, responseBuffer.toString());
+    } else {
+      emitError('404', url);
+    }
+  });
+  crawler.on('complete', (queueItem, responseBuffer, response) => {
+    crawlResults.forEach(function (page, index, results) {
+      parsedPages.push({url: page.url, results: analyzePage(page.body)});
+    });
+    emitter.emit('done', parsedPages);
+  });
+  return {
+    on: emitter.on,
+    off: emitter.off,
+    start,
+    stop,
+    load,
+    test: analyzePage
+  }
 };
