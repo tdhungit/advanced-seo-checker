@@ -154,7 +154,6 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     }
   });
   crawler.on('complete', (queueItem, responseBuffer, response) => {
-    console.log('Crawling complete');
     onComplete();
   });
   return {

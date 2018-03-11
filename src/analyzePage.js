@@ -1,6 +1,6 @@
 const cheerio = require('cheerio')
 const blc = require('broken-link-checker');
-
+const ssllabs = require("node-ssllabs");
 
 //TESTS COVERED
 //Missing title tag
@@ -11,6 +11,9 @@ const blc = require('broken-link-checker');
 //Broken Images
 //Too much text in title
 //Duplicate h1 tag
+//Check if sitemap is exits
+//Check if robot files exists
+//SSLLabs Integration
 
 module.exports = (url, body) => {
   const $ = cheerio.load(body), page = {};
@@ -19,6 +22,17 @@ module.exports = (url, body) => {
   page.description = $('meta[name=description]').attr('content') || null;
   page.author = $('meta[name=author]').attr('content') || null;
   page.keywords = $('meta[name=keywords]').attr('content') || null;
+
+  const testSSLCertificate = () => {
+    const init = (resolve, reject) => {
+      ssllabs.scan(page.url, function (err, host) {
+        resolve(host);
+      });
+    };
+
+    let promise = new Promise(init);
+    return promise;
+  };
 
   const testAccessibleImgs = () => {
     let totalImgs = 0, accessibleImgs = 0;
@@ -72,8 +86,13 @@ module.exports = (url, body) => {
     page.tooMuchTextInTitle = testTooMuchTextInTitle();
     page.imgAccessibility = testAccessibleImgs();
 
-    discoverBrokenLinks().then((result) => {
-      page.blc = result;
+    const promises = [];
+    promises.push(testSSLCertificate());
+    promises.push(discoverBrokenLinks());
+
+    Promise.all(promises).then(function (data) {
+      page.ssl = data[0];
+      page.blc = data[1];
       page.linksAvailability = 100 - 100 * page.blc.broken.a.length / page.blc.total.a.length;
       page.imagesAvailability = 100 - 100 * page.blc.broken.img.length / page.blc.total.img.length;
       resolve(page);
