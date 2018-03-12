@@ -49,28 +49,33 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     }
     return url;
   }
-  const load = (url, callback) => {
-    url = getValidatedURL(url);
-    // Make request and fire callback
-    request.get(url.toLowerCase(), function (error, response, body) {
-      if (!error && response.statusCode === 200) {
-        return callback(body);
-      }
+  const load = (url) => {
+    const init = (resolve, reject) => {
+      url = getValidatedURL(url);
+      // Make request and fire callback
+      request.get(url.toLowerCase(), function (error, response, body) {
+        if (!error && response.statusCode === 200) {
+          resolve(body);
+        }
+        reject(false);
+      });
+    };
 
-      return callback(false);
-    });
+    let promise = new Promise(init);
+    return promise;
   };
   const analyze = (urls) => {
     const analyzer = createAnalyzer();
     urls = Array.isArray(urls) ? urls : [urls];
-
     const init = (resolve, reject) => {
       const bodiesPromises = [];
       for (let i = 0; i < urls.length; i++) {
         bodiesPromises.push(load(urls[i]));
       }
       Promise.all(bodiesPromises).then(function (bodies) {
+        console.log('Start analyzing urls');
         analyzer.analyzePages(urls, bodies).then((pages) => {
+          console.log('Analyzing urls done');
           resolve(pages);
         });
       });

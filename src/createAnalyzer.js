@@ -11,6 +11,8 @@ const ssllabs = require("node-ssllabs");
 //Broken Images
 //Too much text in title
 //Duplicate h1 tag
+//Duplicate meta title
+//Duplicate meta desc
 //Check if sitemap is exits
 //Check if robot files exists
 //SSLLabs Integration
@@ -25,7 +27,9 @@ module.exports = () => {
           grades: [],
           value: host
         };
-
+        if (err) {
+          return resolve(result);
+        }
         host.endpoints.forEach(function (endpoint) {
           if (!endpoint.grade) {
             return;
@@ -156,7 +160,7 @@ module.exports = () => {
   const analyzePage = (url, body) => {
     const $ = cheerio.load(body), page = {};
     page.url = url;
-
+    console.log('Analyzing: ' + url);
     const init = (resolve, reject) => {
       page.title = $('title').text() || null;
       page.description = $('meta[name=description]').attr('content') || null;
@@ -181,6 +185,7 @@ module.exports = () => {
         page.externalBrokenLinks = page.blc.externalBrokenLinks;
         page.internalBrokenImages = page.blc.internalBrokenImages;
         page.externalBrokenImages = page.blc.externalBrokenImages;
+        console.log('Analyzing: ' + url + ' was done');
         resolve(page);
       });
     };
@@ -190,16 +195,41 @@ module.exports = () => {
   };
 
   const analyzePages = (urls, bodies) => {
+    const summary = {};
+
     const init = (resolve, reject) => {
       const promises = [];
       for (let i = 0; i < urls.length; i++) {
         promises.push(analyzePage(urls[i], bodies[i]));
       }
       Promise.all(promises).then(function (pages) {
-        resolve(pages);
+        summary.pages = pages;
+        testDuplicate('duplicateTitlePages', 'title');
+        testDuplicate('duplicateDescPages', 'description');
+        resolve(summary);
       });
     };
 
+    const testDuplicate = (skey, pkey) => {
+      summary[skey] = {};
+      const skip = {};
+      for (let first of summary.pages) {
+        for (let second of summary.pages) {
+          if (first[pkey] !== second[pkey] || skip[second.url] || first.url === second.url) {
+            continue;
+          }
+          if (!summary[skey][first.url]) {
+            summary[skey][first.url] = [];
+          }
+          const compareItem = {
+            url: second.url
+          }
+          compareItem[pkey] = second[pkey];
+          summary[skey][first.url].push(compareItem);
+          skip[second.url] = true;
+        }
+      }
+    };
     let promise = new Promise(init);
     return promise;
   };
