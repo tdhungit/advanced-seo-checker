@@ -1,7 +1,7 @@
 const cheerio = require('cheerio')
 const blc = require('broken-link-checker');
 const ssllabs = require("node-ssllabs");
-
+const stringSimilarity = require('string-similarity');
 //TESTS COVERED
 //Missing title tag
 //Missing description tag
@@ -206,14 +206,43 @@ module.exports = () => {
         summary.pages = pages;
         testDuplicate('duplicateTitlePages', 'title');
         testDuplicate('duplicateDescPages', 'description');
+        testDuplicateContent(urls, bodies);
         resolve(summary);
       });
+    };
+
+    const testDuplicateContent = (urls, bodies) => {
+      summary.duplicateContentPages = {};
+      const skip = {};
+      for (let [firstIndex, first] of urls.entries()) {
+        if (skip[first]) {
+          continue;
+        }
+        for (let [secondIndex, second] of urls.entries()) {
+          const similarity = stringSimilarity.compareTwoStrings(bodies[firstIndex], bodies[secondIndex]);
+          if (similarity < 0.9 || skip[second] || first === second) {
+            continue;
+          }
+          if (!summary.duplicateContentPages[first]) {
+            summary.duplicateContentPages[first] = [];
+          }
+          const compareItem = {
+            url: second,
+            similarity:similarity
+          };
+          summary.duplicateContentPages[first].push(compareItem);
+          skip[second] = true;
+        }
+      }
     };
 
     const testDuplicate = (skey, pkey) => {
       summary[skey] = {};
       const skip = {};
       for (let first of summary.pages) {
+        if (skip[first.url]) {
+          continue;
+        }
         for (let second of summary.pages) {
           if (first[pkey] !== second[pkey] || skip[second.url] || first.url === second.url) {
             continue;
