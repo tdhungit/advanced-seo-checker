@@ -1,4 +1,3 @@
-const fs = require('fs');
 const http = require('http');
 const path = require('path');
 const parseURL = require('url-parse');
@@ -109,10 +108,16 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
   const onComplete = () => {
     let res = {};
     validateSitemap().then(function (result) {
-      res.containSitemap = result;
+      res.sitemap = {
+        summary: !result ? 'Sitemap.xml not found' : 'Sitemap.xml was found',
+        value: result
+      };
     });
     validateRobots().then(function (result) {
-      res.containRobots = result;
+      res.robots = {
+        summary: !result ? 'Robots.txt not found' : 'Robots.txt was found',
+        value: result
+      };
     });
 
     const promises = [];

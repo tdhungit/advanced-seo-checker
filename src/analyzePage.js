@@ -19,16 +19,24 @@ const ssllabs = require("node-ssllabs");
 module.exports = (url, body) => {
   const $ = cheerio.load(body), page = {};
   page.url = url;
-  page.title = $('title').text() || null;
-  page.description = $('meta[name=description]').attr('content') || null;
-  page.author = $('meta[name=author]').attr('content') || null;
-  page.keywords = $('meta[name=keywords]').attr('content') || null;
-  page.containsDocType = body.toLowerCase().lastIndexOf('<!doctype html>') !== -1;
 
   const testSSLCertificate = () => {
     const init = (resolve, reject) => {
       ssllabs.scan(page.url, function (err, host) {
-        resolve(host);
+        const result = {
+          summary: '',
+          grades: [],
+          value: host
+        };
+
+        host.endpoints.forEach(function (endpoint) {
+          if(!endpoint.grade){
+            continue;
+          }
+          result.grades.push(endpoint.grade);
+        });
+        result.summary = !result.grades.length ? 'No SSL certificate detected' : '';
+        resolve(result);
       });
     };
 
@@ -37,20 +45,63 @@ module.exports = (url, body) => {
   };
 
   const testAccessibleImgs = () => {
-    let totalImgs = 0, accessibleImgs = 0;
+    const totalImgs = [], accessibleImgs = [], missingAltImages = [];
     $('img').each(function (index) {
-      totalImgs++;
-      accessibleImgs += $(this).attr('alt') || $(this).attr('title') ? 1 : 0;
+      totalImgs.push($(this).html());
+      if ($(this).attr('alt') || $(this).attr('title')) {
+        accessibleImgs.push($(this).attr('src'));
+      }
+      else {
+        missingAltImages.push($(this).attr('src'));
+      }
     });
-    return (accessibleImgs / totalImgs) * 100;
+    return {
+      summary: missingAltImages.length + ' images don\'t have alt attributes out of ' + totalImgs.length,
+      list: missingAltImages,
+      value: (missingAltImages.length / totalImgs.length) * 100
+    };
+  };
+
+  const testMissingTitle = () => {
+    return {
+      summary: !page.title ? '1 pages don\'t have title tags' : '',
+      value: page.title
+    };
   };
 
   const testTooMuchTextInTitle = () => {
-    return page.title.length <= 75;
+    return {
+      summary: page.title ? '1 page have too much text within the title tags' : '1 pages don\'t have title tags',
+      text: page.title ? page.title : '',
+      value: page.title ? page.title.length <= 75 : 0
+    };
+  };
+  const testDOCType = () => {
+    const result = {
+      summary: '',
+      value: body.toLowerCase().lastIndexOf('<!doctype html>') !== -1
+    };
+    if (result.value === 0) {
+      result.summary = '1 page don\'t have doctype declared';
+    }
+    else {
+      result.summary = '0 page don\'t have doctype declared';
+    }
+    return result;
   };
 
   const countH1 = () => {
-    return $('h1').length;
+    const result = {
+      summary: '',
+      value: $('h1').length
+    };
+    if (result.value === 0) {
+      result.summary = '0 pages don\'t have an h1 heading';
+    }
+    else {
+      result.summary = '1 page have more than one H1 tag';
+    }
+    return result;
   };
 
   const discoverBrokenLinks = () => {
@@ -59,20 +110,42 @@ module.exports = (url, body) => {
       var htmlChecker = new blc.HtmlChecker({}, {
         link: function (result) {
           if (!total[result.html.tagName]) {
-            total[result.html.tagName] = [];
-            broken[result.html.tagName] = [];
+            total[result.html.tagName] = {internal: [], external: []};
+            broken[result.html.tagName] = {internal: [], external: []};
           }
 
-          total[result.html.tagName].push(result);
+          const type = result.internal ? 'internal' : 'external';
+          total[result.html.tagName][type].push(result);
           if (result.broken) {
-            broken[result.html.tagName].push(result);
+            broken[result.html.tagName][type].push(result);
           }
         },
         complete: function (result) {
-          resolve({
+          const res = {
             total: total,
-            broken: broken
-          });
+            broken: broken,
+            internalBrokenLinks: {
+              summary: broken.a.internal.length + ' internal links are broken',
+              list: broken.a.internal,
+              value: broken.a.internal.length
+            },
+            externalBrokenLinks: {
+              summary: broken.a.external.length + ' external links are broken',
+              list: broken.a.external,
+              value: broken.a.external.length
+            },
+            internalBrokenImages: {
+              summary: broken.img.internal.length + ' internal images are broken',
+              list: broken.img.internal,
+              value: broken.img.internal.length
+            },
+            externalBrokenImages: {
+              summary: broken.img.external.length + ' external images are broken',
+              list: broken.img.external,
+              value: broken.img.external.length
+            }
+          }
+          resolve(res);
         }
       });
       htmlChecker.scan(body, url);
@@ -83,10 +156,16 @@ module.exports = (url, body) => {
   }
 
   const init = (resolve, reject) => {
+    page.title = $('title').text() || null;
+    page.description = $('meta[name=description]').attr('content') || null;
+    page.author = $('meta[name=author]').attr('content') || null;
+    page.keywords = $('meta[name=keywords]').attr('content') || null;
+
     page.heading1 = $('body h1:first-child').text().trim().replace('\n', '');
     page.totalHeadings = countH1();
     page.tooMuchTextInTitle = testTooMuchTextInTitle();
-    page.imgAccessibility = testAccessibleImgs();
+    page.imgAltAttribute = testAccessibleImgs();
+    page.containsDocType = testDOCType();
 
     const promises = [];
     promises.push(testSSLCertificate());
@@ -95,8 +174,10 @@ module.exports = (url, body) => {
     Promise.all(promises).then(function (data) {
       page.ssl = data[0];
       page.blc = data[1];
-      page.linksAvailability = 100 - 100 * page.blc.broken.a.length / page.blc.total.a.length;
-      page.imagesAvailability = 100 - 100 * page.blc.broken.img.length / page.blc.total.img.length;
+      page.internalBrokenLinks = page.blc.internalBrokenLinks;
+      page.externalBrokenLinks = page.blc.externalBrokenLinks;
+      page.internalBrokenImages = page.blc.internalBrokenImages;
+      page.externalBrokenImages = page.blc.externalBrokenImages;
       resolve(page);
     });
   };
