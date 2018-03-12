@@ -1,17 +1,12 @@
 const http = require('http');
-const path = require('path');
 const parseURL = require('url-parse');
-const cheerio = require('cheerio');
 const request = require('request');
-const eachSeries = require('async/eachSeries');
-const compareUrls = require('compare-urls');
 const urlExists = require('url-exists');
 const normalizeUrl = require('normalize-url');
 const mitt = require('mitt');
 const createCrawler = require('./createCrawler');
-const analyzePage = require('./analyzePage');
+const createAnalyzer = require('./createAnalyzer');
 const isValidURL = require('./helpers/isValidURL');
-const discoverResources = require('./discoverResources');
 
 module.exports = function AdvancedSEOChecker(uri, opts) {
   const defaultOpts = {
@@ -65,7 +60,20 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
       return callback(false);
     });
   };
+  const analyze = (url) => {
+    const analyzer = createAnalyzer();
 
+    const init = (resolve, reject) => {
+      load(url, function (html) {
+        analyzer.analyzePage(url, html).then((summary) => {
+          resolve(summary);
+        });
+      });
+    };
+
+    let promise = new Promise(init);
+    return promise;
+  };
   const validateSitemap = () => {
     let url = parsedUrl.href;
     const init = (resolve, reject) => {
@@ -122,7 +130,7 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
 
     const promises = [];
     crawlResults.forEach(function (page, index, results) {
-      promises.push(analyzePage(page.url, page.body));
+      promises.push(analyzer.analyzePage(page.url, page.body));
     });
 
     Promise.all(promises).then(function (pages) {
@@ -167,6 +175,6 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     start,
     stop,
     load,
-    test: analyzePage
+    analyze
   }
 };

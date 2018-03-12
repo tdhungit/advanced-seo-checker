@@ -16,11 +16,8 @@ const ssllabs = require("node-ssllabs");
 //SSLLabs Integration
 //DOCType Check
 
-module.exports = (url, body) => {
-  const $ = cheerio.load(body), page = {};
-  page.url = url;
-
-  const testSSLCertificate = () => {
+module.exports = () => {
+  const testSSLCertificate = (page) => {
     const init = (resolve, reject) => {
       ssllabs.scan(page.url, function (err, host) {
         const result = {
@@ -30,8 +27,8 @@ module.exports = (url, body) => {
         };
 
         host.endpoints.forEach(function (endpoint) {
-          if(!endpoint.grade){
-            continue;
+          if (!endpoint.grade) {
+            return;
           }
           result.grades.push(endpoint.grade);
         });
@@ -44,7 +41,7 @@ module.exports = (url, body) => {
     return promise;
   };
 
-  const testAccessibleImgs = () => {
+  const testAccessibleImgs = ($) => {
     const totalImgs = [], accessibleImgs = [], missingAltImages = [];
     $('img').each(function (index) {
       totalImgs.push($(this).html());
@@ -62,21 +59,22 @@ module.exports = (url, body) => {
     };
   };
 
-  const testMissingTitle = () => {
+  const testMissingTitle = (page) => {
     return {
       summary: !page.title ? '1 pages don\'t have title tags' : '',
       value: page.title
     };
   };
 
-  const testTooMuchTextInTitle = () => {
+  const testTooMuchTextInTitle = (page) => {
     return {
       summary: page.title ? '1 page have too much text within the title tags' : '1 pages don\'t have title tags',
       text: page.title ? page.title : '',
       value: page.title ? page.title.length <= 75 : 0
     };
   };
-  const testDOCType = () => {
+
+  const testDOCType = (body) => {
     const result = {
       summary: '',
       value: body.toLowerCase().lastIndexOf('<!doctype html>') !== -1
@@ -90,7 +88,7 @@ module.exports = (url, body) => {
     return result;
   };
 
-  const countH1 = () => {
+  const countH1 = ($) => {
     const result = {
       summary: '',
       value: $('h1').length
@@ -104,7 +102,7 @@ module.exports = (url, body) => {
     return result;
   };
 
-  const discoverBrokenLinks = () => {
+  const discoverBrokenLinks = (url, body) => {
     const init = (resolve, reject) => {
       const broken = {}, total = {};
       var htmlChecker = new blc.HtmlChecker({}, {
@@ -155,33 +153,43 @@ module.exports = (url, body) => {
     return promise;
   }
 
-  const init = (resolve, reject) => {
-    page.title = $('title').text() || null;
-    page.description = $('meta[name=description]').attr('content') || null;
-    page.author = $('meta[name=author]').attr('content') || null;
-    page.keywords = $('meta[name=keywords]').attr('content') || null;
+  const analyzePage = (url, body) => {
+    const $ = cheerio.load(body), page = {};
+    page.url = url;
 
-    page.heading1 = $('body h1:first-child').text().trim().replace('\n', '');
-    page.totalHeadings = countH1();
-    page.tooMuchTextInTitle = testTooMuchTextInTitle();
-    page.imgAltAttribute = testAccessibleImgs();
-    page.containsDocType = testDOCType();
+    const init = (resolve, reject) => {
+      page.title = $('title').text() || null;
+      page.description = $('meta[name=description]').attr('content') || null;
+      page.author = $('meta[name=author]').attr('content') || null;
+      page.keywords = $('meta[name=keywords]').attr('content') || null;
 
-    const promises = [];
-    promises.push(testSSLCertificate());
-    promises.push(discoverBrokenLinks());
+      page.heading1 = $('body h1:first-child').text().trim().replace('\n', '');
+      page.totalHeadings = countH1($);
+      page.missingTitle = testMissingTitle(page);
+      page.tooMuchTextInTitle = testTooMuchTextInTitle(page);
+      page.imgAltAttribute = testAccessibleImgs($);
+      page.containsDocType = testDOCType(body);
 
-    Promise.all(promises).then(function (data) {
-      page.ssl = data[0];
-      page.blc = data[1];
-      page.internalBrokenLinks = page.blc.internalBrokenLinks;
-      page.externalBrokenLinks = page.blc.externalBrokenLinks;
-      page.internalBrokenImages = page.blc.internalBrokenImages;
-      page.externalBrokenImages = page.blc.externalBrokenImages;
-      resolve(page);
-    });
+      const promises = [];
+      promises.push(testSSLCertificate(page));
+      promises.push(discoverBrokenLinks(url, body));
+
+      Promise.all(promises).then(function (data) {
+        page.ssl = data[0];
+        page.blc = data[1];
+        page.internalBrokenLinks = page.blc.internalBrokenLinks;
+        page.externalBrokenLinks = page.blc.externalBrokenLinks;
+        page.internalBrokenImages = page.blc.internalBrokenImages;
+        page.externalBrokenImages = page.blc.externalBrokenImages;
+        resolve(page);
+      });
+    };
+
+    let promise = new Promise(init);
+    return promise;
   };
 
-  let promise = new Promise(init);
-  return promise;
+  return {
+    analyzePage
+  }
 };
