@@ -189,7 +189,22 @@ module.exports = () => {
     return promise;
   };
 
+  const analyzePages = (urls, bodies) => {
+    const init = (resolve, reject) => {
+      const promises = [];
+      for (let i = 0; i < urls.length; i++) {
+        promises.push(analyzePage(urls[i], bodies[i]));
+      }
+      Promise.all(promises).then(function (pages) {
+        resolve(pages);
+      });
+    };
+
+    let promise = new Promise(init);
+    return promise;
+  };
   return {
-    analyzePage
+    analyzePage,
+    analyzePages
   }
 };

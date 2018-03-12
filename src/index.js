@@ -60,13 +60,18 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
       return callback(false);
     });
   };
-  const analyze = (url) => {
+  const analyze = (urls) => {
     const analyzer = createAnalyzer();
+    urls = Array.isArray(urls) ? urls : [urls];
 
     const init = (resolve, reject) => {
-      load(url, function (html) {
-        analyzer.analyzePage(url, html).then((summary) => {
-          resolve(summary);
+      const bodiesPromises = [];
+      for (let i = 0; i < urls.length; i++) {
+        bodiesPromises.push(load(urls[i]));
+      }
+      Promise.all(bodiesPromises).then(function (bodies) {
+        analyzer.analyzePages(urls, bodies).then((pages) => {
+          resolve(pages);
         });
       });
     };
