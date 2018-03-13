@@ -7,6 +7,7 @@ const mitt = require('mitt');
 const createCrawler = require('./createCrawler');
 const createAnalyzer = require('./createAnalyzer');
 const isValidURL = require('./helpers/isValidURL');
+const ssllabs = require("node-ssllabs");
 
 module.exports = function AdvancedSEOChecker(uri, opts) {
   const defaultOpts = {
@@ -50,34 +51,90 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     return url;
   }
   const load = (url) => {
+    let limit = 3;
+    const getPage = (url, done) => {
+      request.get(url.toLowerCase(), function (error, response, body) {
+        if (!error || limit === 0) {
+          return done(error, body);
+        }
+        limit --;
+        return getPage(url, done);
+      });
+    };
     const init = (resolve, reject) => {
       url = getValidatedURL(url);
       // Make request and fire callback
-      request.get(url.toLowerCase(), function (error, response, body) {
-        if (!error && response.statusCode === 200) {
-          resolve(body);
+      getPage(url.toLowerCase(), function (error, body) {
+        if (!error) {
+          return resolve(body);
         }
-        reject(false);
+        return resolve('');
       });
     };
 
     let promise = new Promise(init);
     return promise;
   };
-  const analyze = (urls) => {
+  const analyze = (urls, bodies) => {
+    let res = {};
     const analyzer = createAnalyzer();
     urls = Array.isArray(urls) ? urls : [urls];
+
+    const onBodiesLoad = (bodies, resolve) => {
+      console.log('Retrieving urls bodies done');
+      console.log('Start analyzing urls');
+      const promises = [validateSitemap(), validateRobots(), testSSLCertificate(normalizeUrl(uri)),
+        analyzer.analyzePages(urls, bodies)];
+      Promise.all(promises).then(function (result) {
+        res = result[3];
+        res.issues.notices.sitemap = result[0];
+        res.issues.notices.robots = result[1];
+        res.issues.warnings.ssl = result[2];
+        console.log('Analyzing urls done');
+        resolve(res);
+      });
+    };
+
     const init = (resolve, reject) => {
-      const bodiesPromises = [];
-      for (let i = 0; i < urls.length; i++) {
-        bodiesPromises.push(load(urls[i]));
+      if (bodies) {
+        onBodiesLoad(bodies, resolve);
       }
-      Promise.all(bodiesPromises).then(function (bodies) {
-        console.log('Start analyzing urls');
-        analyzer.analyzePages(urls, bodies).then((pages) => {
-          console.log('Analyzing urls done');
-          resolve(pages);
+      else {
+        const bodiesPromises = [];
+        for (let i = 0; i < urls.length; i++) {
+          bodiesPromises.push(load(urls[i]));
+        }
+        console.log('Start retrieving urls bodies');
+        Promise.all(bodiesPromises).then(function (bodies) {
+          onBodiesLoad(bodies, resolve);
         });
+      }
+    };
+
+    let promise = new Promise(init);
+    return promise;
+  };
+  const testSSLCertificate = (url) => {
+    const init = (resolve, reject) => {
+      console.log('Starting SSLLabs test');
+      ssllabs.scan(url, function (err, host) {
+        console.log('Ending SSLLabs test');
+        const result = {
+          summary: '',
+          grades: [],
+          value: host
+        };
+        if (err) {
+          return resolve(result);
+        }
+        host.endpoints.forEach(function (endpoint) {
+          if (!endpoint.grade) {
+            return;
+          }
+          result.grades.push(endpoint.grade);
+        });
+        result.summary = !result.grades.length ? 'No SSL certificate detected' : '';
+        resolve(result);
       });
     };
 
@@ -88,7 +145,10 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     let url = parsedUrl.href;
     const init = (resolve, reject) => {
       urlExists(normalizeUrl(url) + '/sitemap.xml', function (err, exists) {
-        resolve(exists);
+        resolve({
+          summary: !exists ? 'Sitemap.xml not found' : 'Sitemap.xml was found',
+          value: exists
+        });
       });
     };
     let promise = new Promise(init);
@@ -98,7 +158,10 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     let url = parsedUrl.href;
     const init = (resolve, reject) => {
       urlExists(normalizeUrl(url) + '/robots.txt', function (err, exists) {
-        resolve(exists);
+        resolve({
+          summary: !exists ? 'Robots.txt not found' : 'Robots.txt was found',
+          value: exists
+        });
       });
     };
     let promise = new Promise(init);
@@ -124,28 +187,13 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     return promise;
   };
   const onComplete = () => {
-    let res = {};
-    validateSitemap().then(function (result) {
-      res.sitemap = {
-        summary: !result ? 'Sitemap.xml not found' : 'Sitemap.xml was found',
-        value: result
-      };
-    });
-    validateRobots().then(function (result) {
-      res.robots = {
-        summary: !result ? 'Robots.txt not found' : 'Robots.txt was found',
-        value: result
-      };
-    });
-
-    const promises = [];
+    const urls = [], bodies = [];
     crawlResults.forEach(function (page, index, results) {
-      promises.push(analyzer.analyzePage(page.url, page.body));
+      urls.push(page.url);
+      bodies.push(page.body);
     });
-
-    Promise.all(promises).then(function (pages) {
-      res.pages = pages;
-      emitter.emit('done', res);
+    analyze(urls, bodies).then(function (summary) {
+      emitter.emit('done', summary);
     });
   };
   crawler.on('fetch404', ({url}) => emitError(404, url));

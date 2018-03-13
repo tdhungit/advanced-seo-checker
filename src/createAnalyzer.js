@@ -1,6 +1,5 @@
 const cheerio = require('cheerio')
 const blc = require('broken-link-checker');
-const ssllabs = require("node-ssllabs");
 const stringSimilarity = require('string-similarity');
 //TESTS COVERED
 //Missing title tag
@@ -19,31 +18,6 @@ const stringSimilarity = require('string-similarity');
 //DOCType Check
 
 module.exports = () => {
-  const testSSLCertificate = (page) => {
-    const init = (resolve, reject) => {
-      ssllabs.scan(page.url, function (err, host) {
-        const result = {
-          summary: '',
-          grades: [],
-          value: host
-        };
-        if (err) {
-          return resolve(result);
-        }
-        host.endpoints.forEach(function (endpoint) {
-          if (!endpoint.grade) {
-            return;
-          }
-          result.grades.push(endpoint.grade);
-        });
-        result.summary = !result.grades.length ? 'No SSL certificate detected' : '';
-        resolve(result);
-      });
-    };
-
-    let promise = new Promise(init);
-    return promise;
-  };
 
   const testAccessibleImgs = ($) => {
     const totalImgs = [], accessibleImgs = [], missingAltImages = [];
@@ -108,13 +82,10 @@ module.exports = () => {
 
   const discoverBrokenLinks = (url, body) => {
     const init = (resolve, reject) => {
-      const broken = {}, total = {};
+      const broken = {a: {internal: [], external: []}, img: {internal: [], external: []}},
+        total = {a: {internal: [], external: []}, img: {internal: [], external: []}};
       var htmlChecker = new blc.HtmlChecker({}, {
         link: function (result) {
-          if (!total[result.html.tagName]) {
-            total[result.html.tagName] = {internal: [], external: []};
-            broken[result.html.tagName] = {internal: [], external: []};
-          }
 
           const type = result.internal ? 'internal' : 'external';
           total[result.html.tagName][type].push(result);
@@ -177,12 +148,10 @@ module.exports = () => {
 
 
       const promises = [];
-      promises.push(testSSLCertificate(page));
       promises.push(discoverBrokenLinks(url, body));
 
       Promise.all(promises).then(function (data) {
-        page.ssl = data[0];
-        page.blc = data[1];
+        page.blc = data[0];
         page.issues.errors.internalBrokenLinks = page.blc.internalBrokenLinks;
         page.issues.errors.externalBrokenLinks = page.blc.externalBrokenLinks;
         page.issues.errors.internalBrokenImages = page.blc.internalBrokenImages;
