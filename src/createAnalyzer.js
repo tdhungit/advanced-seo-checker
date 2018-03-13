@@ -166,13 +166,15 @@ module.exports = () => {
       page.description = $('meta[name=description]').attr('content') || null;
       page.author = $('meta[name=author]').attr('content') || null;
       page.keywords = $('meta[name=keywords]').attr('content') || null;
+      page.issues = {errors: {}, warnings: {}, notices: {}};
 
       page.heading1 = $('body h1:first-child').text().trim().replace('\n', '');
-      page.totalHeadings = countH1($);
-      page.missingTitle = testMissingTitle(page);
-      page.tooMuchTextInTitle = testTooMuchTextInTitle(page);
-      page.imgAltAttribute = testAccessibleImgs($);
-      page.containsDocType = testDOCType(body);
+      page.issues.warnings.totalHeadings = countH1($);
+      page.issues.errors.missingTitle = testMissingTitle(page);
+      page.issues.warnings.tooMuchTextInTitle = testTooMuchTextInTitle(page);
+      page.issues.warnings.imgAltAttribute = testAccessibleImgs($);
+      page.issues.warnings.containsDocType = testDOCType(body);
+
 
       const promises = [];
       promises.push(testSSLCertificate(page));
@@ -181,10 +183,10 @@ module.exports = () => {
       Promise.all(promises).then(function (data) {
         page.ssl = data[0];
         page.blc = data[1];
-        page.internalBrokenLinks = page.blc.internalBrokenLinks;
-        page.externalBrokenLinks = page.blc.externalBrokenLinks;
-        page.internalBrokenImages = page.blc.internalBrokenImages;
-        page.externalBrokenImages = page.blc.externalBrokenImages;
+        page.issues.errors.internalBrokenLinks = page.blc.internalBrokenLinks;
+        page.issues.errors.externalBrokenLinks = page.blc.externalBrokenLinks;
+        page.issues.errors.internalBrokenImages = page.blc.internalBrokenImages;
+        page.issues.errors.externalBrokenImages = page.blc.externalBrokenImages;
         console.log('Analyzing: ' + url + ' was done');
         resolve(page);
       });
@@ -195,8 +197,7 @@ module.exports = () => {
   };
 
   const analyzePages = (urls, bodies) => {
-    const summary = {};
-
+    const summary = {issues: {errors: {}, warnings: {}, notices: {}}};
     const init = (resolve, reject) => {
       const promises = [];
       for (let i = 0; i < urls.length; i++) {
@@ -223,14 +224,14 @@ module.exports = () => {
           if (similarity < 0.9 || skip[second] || first === second) {
             continue;
           }
-          if (!summary.duplicateContentPages[first]) {
-            summary.duplicateContentPages[first] = [];
+          if (!summary.issues.errors.duplicateContentPages[first]) {
+            summary.issues.errors.duplicateContentPages[first] = [];
           }
           const compareItem = {
             url: second,
-            similarity:similarity
+            similarity: similarity
           };
-          summary.duplicateContentPages[first].push(compareItem);
+          summary.issues.errors.duplicateContentPages[first].push(compareItem);
           skip[second] = true;
         }
       }
@@ -247,14 +248,14 @@ module.exports = () => {
           if (first[pkey] !== second[pkey] || skip[second.url] || first.url === second.url) {
             continue;
           }
-          if (!summary[skey][first.url]) {
-            summary[skey][first.url] = [];
+          if (!summary.issues.errors[skey][first.url]) {
+            summary.issues.errors[skey][first.url] = [];
           }
           const compareItem = {
             url: second.url
           }
           compareItem[pkey] = second[pkey];
-          summary[skey][first.url].push(compareItem);
+          summary.issues.errors[skey][first.url].push(compareItem);
           skip[second.url] = true;
         }
       }
