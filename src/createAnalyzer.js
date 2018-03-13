@@ -84,6 +84,7 @@ module.exports = () => {
     const init = (resolve, reject) => {
       const broken = {a: {internal: [], external: []}, img: {internal: [], external: []}},
         total = {a: {internal: [], external: []}, img: {internal: [], external: []}};
+
       var htmlChecker = new blc.HtmlChecker({}, {
         link: function (result) {
 
@@ -122,7 +123,7 @@ module.exports = () => {
         }
       });
       htmlChecker.scan(body, url);
-    }
+    };
 
     let promise = new Promise(init);
     return promise;
@@ -132,6 +133,7 @@ module.exports = () => {
     const $ = cheerio.load(body), page = {};
     page.url = url;
     console.log('Analyzing: ' + url);
+
     const init = (resolve, reject) => {
       page.title = $('title').text() || null;
       page.description = $('meta[name=description]').attr('content') || null;
@@ -146,12 +148,8 @@ module.exports = () => {
       page.issues.warnings.imgAltAttribute = testAccessibleImgs($);
       page.issues.warnings.containsDocType = testDOCType(body);
 
-
-      const promises = [];
-      promises.push(discoverBrokenLinks(url, body));
-
-      Promise.all(promises).then(function (data) {
-        page.blc = data[0];
+      discoverBrokenLinks(url, body).then(function (data) {
+        page.blc = data;
         page.issues.errors.internalBrokenLinks = page.blc.internalBrokenLinks;
         page.issues.errors.externalBrokenLinks = page.blc.externalBrokenLinks;
         page.issues.errors.internalBrokenImages = page.blc.internalBrokenImages;
@@ -177,12 +175,13 @@ module.exports = () => {
         testDuplicate('duplicateTitlePages', 'title');
         testDuplicate('duplicateDescPages', 'description');
         testDuplicateContent(urls, bodies);
+        console.log('All pages were analyzed');
         resolve(summary);
       });
     };
 
     const testDuplicateContent = (urls, bodies) => {
-      summary.duplicateContentPages = {};
+      summary.issues.errors.duplicateContentPages = {};
       const skip = {};
       for (let [firstIndex, first] of urls.entries()) {
         if (skip[first]) {
@@ -207,7 +206,7 @@ module.exports = () => {
     };
 
     const testDuplicate = (skey, pkey) => {
-      summary[skey] = {};
+      summary.issues.errors[skey] = {};
       const skip = {};
       for (let first of summary.pages) {
         if (skip[first.url]) {

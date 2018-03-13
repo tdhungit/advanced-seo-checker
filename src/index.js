@@ -79,7 +79,6 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     let res = {};
     const analyzer = createAnalyzer();
     urls = Array.isArray(urls) ? urls : [urls];
-
     const onBodiesLoad = (bodies, resolve) => {
       console.log('Retrieving urls bodies done');
       console.log('Start analyzing urls');
@@ -118,13 +117,13 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     const init = (resolve, reject) => {
       console.log('Starting SSLLabs test');
       ssllabs.scan(url, function (err, host) {
-        console.log('Ending SSLLabs test');
+        console.log('SSLLabs test was done');
         const result = {
           summary: '',
           grades: [],
           value: host
         };
-        if (err) {
+        if (err || !host) {
           return resolve(result);
         }
         host.endpoints.forEach(function (endpoint) {
@@ -145,6 +144,7 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     let url = parsedUrl.href;
     const init = (resolve, reject) => {
       urlExists(normalizeUrl(url) + '/sitemap.xml', function (err, exists) {
+        console.log('Sitemap test was done');
         resolve({
           summary: !exists ? 'Sitemap.xml not found' : 'Sitemap.xml was found',
           value: exists
@@ -158,6 +158,7 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     let url = parsedUrl.href;
     const init = (resolve, reject) => {
       urlExists(normalizeUrl(url) + '/robots.txt', function (err, exists) {
+        console.log('robots test was done');
         resolve({
           summary: !exists ? 'Robots.txt not found' : 'Robots.txt was found',
           value: exists
