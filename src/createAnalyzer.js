@@ -51,7 +51,7 @@ module.exports = () => {
       summary: page.title ? '1 page have too much text within the title tags' : '1 pages don\'t have title tags',
       text: page.title ? page.title : '',
       value: page.title ? page.title.length <= 75 : 0,
-      impact: page.title && page.title.length <= 75 : 0 : 100
+      impact: page.title && page.title.length <= 75 ? 0 : 100
     };
   };
 
