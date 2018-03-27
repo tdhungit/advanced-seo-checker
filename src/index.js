@@ -178,8 +178,6 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
   return {
     on: emitter.on,
     off: emitter.off,
-    start,
-    stop,
     load,
     analyze
   }
