@@ -57,7 +57,7 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
         if (!error || limit === 0) {
           return done(error, body);
         }
-        limit --;
+        limit--;
         return getPage(url, done);
       });
     };
@@ -121,7 +121,17 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
         const result = {
           summary: '',
           grades: [],
-          value: host
+          value: host,
+          score: 0
+        };
+        const gradeScores = {
+          'A+': 100,
+          'A': 80,
+          'B': 65,
+          'C': 50,
+          'D': 35,
+          'E': 20,
+          'F': 10
         };
         if (err || !host) {
           return resolve(result);
@@ -130,8 +140,10 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
           if (!endpoint.grade) {
             return;
           }
+          result.score += gradeScores[endpoint.grade] ? gradeScores[endpoint.grade] : 0;
           result.grades.push(endpoint.grade);
         });
+        result.score = result.score / result.grades.length;
         result.summary = !result.grades.length ? 'No SSL certificate detected' : '';
         resolve(result);
       });
