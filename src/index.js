@@ -8,19 +8,11 @@ const createAnalyzer = require('./createAnalyzer');
 const ssllabs = require("node-ssllabs");
 
 module.exports = function AdvancedSEOChecker(uri, opts) {
-  const defaultOpts = {
-    maxDepth: 1,
-    userAgent: 'Node/AdvancedSEOChecker',
-    respectRobotsTxt: true,
-    timeout: 30000,
-    maxConcurrency: 5,
-    downloadUnsupported: false
-  };
+
   if (!uri) {
     throw new Error('Requires a valid URL.');
   }
 
-  const options = Object.assign({}, defaultOpts, opts);
   const emitter = mitt();
   const parsedUrl = parseURL(
     normalizeUrl(uri, {
