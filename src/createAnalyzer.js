@@ -107,25 +107,25 @@ module.exports = () => {
               summary: broken.a.internal.length + ' internal links are broken',
               list: broken.a.internal,
               value: broken.a.internal.length,
-              impact: 100 - (broken.a.internal.length / total.a.internal.length) * 100
+              impact: (broken.a.internal.length / total.a.internal.length) * 100
             },
             externalBrokenLinks: {
               summary: broken.a.external.length + ' external links are broken',
               list: broken.a.external,
               value: broken.a.external.length,
-              impact: 100 - (broken.a.external.length / total.a.external.length) * 100
+              impact: (broken.a.external.length / total.a.external.length) * 100
             },
             internalBrokenImages: {
               summary: broken.img.internal.length + ' internal images are broken',
               list: broken.img.internal,
               value: broken.img.internal.length,
-              impact: 100 - (broken.img.internal.length / total.img.internal.length) * 100
+              impact: (broken.img.internal.length / total.img.internal.length) * 100
             },
             externalBrokenImages: {
               summary: broken.img.external.length + ' external images are broken',
               list: broken.img.external,
               value: broken.img.external.length,
-              impact: 100 - (broken.img.external.length / total.img.external.length) * 100
+              impact: (broken.img.external.length / total.img.external.length) * 100
             }
           }
           resolve(res);
