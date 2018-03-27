@@ -143,7 +143,7 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
           result.score += gradeScores[endpoint.grade] ? gradeScores[endpoint.grade] : 0;
           result.grades.push(endpoint.grade);
         });
-        result.score = result.score / result.grades.length;
+        result.score = result.grades.length ? result.score / result.grades.length : 0;
         result.summary = !result.grades.length ? 'No SSL certificate detected' : '';
         resolve(result);
       });
