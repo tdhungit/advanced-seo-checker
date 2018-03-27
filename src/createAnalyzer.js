@@ -33,14 +33,16 @@ module.exports = () => {
     return {
       summary: missingAltImages.length + ' images don\'t have alt attributes out of ' + totalImgs.length,
       list: missingAltImages,
-      value: (missingAltImages.length / totalImgs.length) * 100
+      value: missingAltImages.length,
+      impact: (missingAltImages.length / totalImgs.length) * 100
     };
   };
 
   const testMissingTitle = (page) => {
     return {
-      summary: !page.title ? '1 pages don\'t have title tags' : '',
-      value: page.title
+      summary: !page.title ? '1 page don\'t have title tags' : '',
+      value: page.title,
+      impact: !page.title ? 100 : 0
     };
   };
 
@@ -48,7 +50,8 @@ module.exports = () => {
     return {
       summary: page.title ? '1 page have too much text within the title tags' : '1 pages don\'t have title tags',
       text: page.title ? page.title : '',
-      value: page.title ? page.title.length <= 75 : 0
+      value: page.title ? page.title.length <= 75 : 0,
+      impact: page.title && page.title.length <= 75 : 0 : 100
     };
   };
 
@@ -63,6 +66,7 @@ module.exports = () => {
     else {
       result.summary = '0 page don\'t have doctype declared';
     }
+    result.impact= result.value ? 0 : 100;
     return result;
   };
 
@@ -77,6 +81,7 @@ module.exports = () => {
     else {
       result.summary = '1 page have more than one H1 tag';
     }
+    result.impact= result.value === 1 ? 0 : 100;
     return result;
   };
 
@@ -101,22 +106,26 @@ module.exports = () => {
             internalBrokenLinks: {
               summary: broken.a.internal.length + ' internal links are broken',
               list: broken.a.internal,
-              value: broken.a.internal.length
+              value: broken.a.internal.length,
+              impact: 100 - (broken.a.internal.length / total.a.internal.length) * 100
             },
             externalBrokenLinks: {
               summary: broken.a.external.length + ' external links are broken',
               list: broken.a.external,
-              value: broken.a.external.length
+              value: broken.a.external.length,
+              impact: 100 - (broken.a.external.length / total.a.external.length) * 100
             },
             internalBrokenImages: {
               summary: broken.img.internal.length + ' internal images are broken',
               list: broken.img.internal,
-              value: broken.img.internal.length
+              value: broken.img.internal.length,
+              impact: 100 - (broken.img.internal.length / total.img.internal.length) * 100
             },
             externalBrokenImages: {
               summary: broken.img.external.length + ' external images are broken',
               list: broken.img.external,
-              value: broken.img.external.length
+              value: broken.img.external.length,
+              impact: 100 - (broken.img.external.length / total.img.external.length) * 100
             }
           }
           resolve(res);
