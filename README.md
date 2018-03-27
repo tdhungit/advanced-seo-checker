@@ -10,15 +10,6 @@ Install with npm `npm install advanced-seo-checker --save`
 
 Require the library and then all the methods listed below will be made available to you.
 
-```js
-const SEOChecker = require('advanced-seo-checker');
-let baseURL = 'http://hazemhagrass.com';
-let crawler = SEOChecker(baseURL, {});
-crawler.load('http://google.com', function(data) {
-  // Response data is available here. 
-});
-```
-
 The `analyze` method takes the URLs' list as a parameter to start analyzing them
 
 <!-- TODO: Document options -->
