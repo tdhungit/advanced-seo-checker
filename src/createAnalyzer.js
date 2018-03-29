@@ -94,6 +94,10 @@ module.exports = () => {
         link: function (result) {
 
           const type = result.internal ? 'internal' : 'external';
+          if(!total[result.html.tagName]){
+            console.log('New tag detected: ' + result.html.tagName);
+            total[result.html.tagName] = {internal: [], external: []};
+          }
           total[result.html.tagName][type].push(result);
           if (result.broken) {
             broken[result.html.tagName][type].push(result);
