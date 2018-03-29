@@ -66,7 +66,7 @@ module.exports = () => {
     else {
       result.summary = '0 page don\'t have doctype declared';
     }
-    result.impact= result.value ? 0 : 100;
+    result.impact = result.value ? 0 : 100;
     return result;
   };
 
@@ -81,7 +81,7 @@ module.exports = () => {
     else {
       result.summary = '1 page have more than one H1 tag';
     }
-    result.impact= result.value === 1 ? 0 : 100;
+    result.impact = result.value === 1 ? 0 : 100;
     return result;
   };
 
@@ -107,25 +107,25 @@ module.exports = () => {
               summary: broken.a.internal.length + ' internal links are broken',
               list: broken.a.internal,
               value: broken.a.internal.length,
-              impact: (broken.a.internal.length / total.a.internal.length) * 100
+              impact: total.a.internal.length ? (broken.a.internal.length / total.a.internal.length) * 100 : 0
             },
             externalBrokenLinks: {
               summary: broken.a.external.length + ' external links are broken',
               list: broken.a.external,
               value: broken.a.external.length,
-              impact: (broken.a.external.length / total.a.external.length) * 100
+              impact: total.a.external.length ? (broken.a.external.length / total.a.external.length) * 100 : 0
             },
             internalBrokenImages: {
               summary: broken.img.internal.length + ' internal images are broken',
               list: broken.img.internal,
               value: broken.img.internal.length,
-              impact: (broken.img.internal.length / total.img.internal.length) * 100
+              impact: total.img.internal.length ? (broken.img.internal.length / total.img.internal.length) * 100 : 0
             },
             externalBrokenImages: {
               summary: broken.img.external.length + ' external images are broken',
               list: broken.img.external,
               value: broken.img.external.length,
-              impact: (broken.img.external.length / total.img.external.length) * 100
+              impact: total.img.external.length ? (broken.img.external.length / total.img.external.length) * 100 : 0
             }
           }
           resolve(res);
