@@ -87,14 +87,20 @@ module.exports = () => {
 
   const discoverBrokenLinks = (url, body) => {
     const init = (resolve, reject) => {
-      const broken = {a: {internal: [], external: []}, img: {internal: [], external: []}},
-        total = {a: {internal: [], external: []}, img: {internal: [], external: []}};
+      const broken = {
+          a: {internal: [], external: []},
+          img: {internal: [], external: []}
+        },
+        total = {
+          a: {internal: [], external: []},
+          img: {internal: [], external: []}
+        };
 
       var htmlChecker = new blc.HtmlChecker({}, {
         link: function (result) {
 
           const type = result.internal ? 'internal' : 'external';
-          if(!total[result.html.tagName]){
+          if (!total[result.html.tagName]) {
             console.log('New tag detected: ' + result.html.tagName);
             total[result.html.tagName] = {internal: [], external: []};
           }
@@ -121,17 +127,17 @@ module.exports = () => {
             },
             internalBrokenImages: {
               summary: broken.img.internal.length + ' internal images are broken',
-              list: broken.img.internal,
-              value: broken.img.internal.length,
-              impact: total.img.internal.length ? (broken.img.internal.length / total.img.internal.length) * 100 : 0
+              list: broken.img.internal.concat(broken.source.internal),
+              value: broken.img.internal.length + broken.source.internal.length,
+              impact: total.img.internal.length ? ((broken.img.internal.length + broken.source.internal.length) / (total.img.internal.length + total.source.internal.length)) * 100 : 0
             },
             externalBrokenImages: {
               summary: broken.img.external.length + ' external images are broken',
-              list: broken.img.external,
-              value: broken.img.external.length,
-              impact: total.img.external.length ? (broken.img.external.length / total.img.external.length) * 100 : 0
+              list: broken.img.external.concat(broken.source.external),
+              value: broken.img.external.length + broken.source.external.length,
+              impact: total.img.external.length ? ((broken.img.external.length + broken.source.external.length) / (total.img.external.length + total.source.external.length)) * 100 : 0
             }
-          }
+          };
           resolve(res);
         }
       });
