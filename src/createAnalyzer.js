@@ -89,11 +89,13 @@ module.exports = () => {
     const init = (resolve, reject) => {
       const broken = {
           a: {internal: [], external: []},
-          img: {internal: [], external: []}
+          img: {internal: [], external: []},
+          source: {internal: [], external: []}
         },
         total = {
           a: {internal: [], external: []},
-          img: {internal: [], external: []}
+          img: {internal: [], external: []},
+          source: {internal: [], external: []}
         };
 
       var htmlChecker = new blc.HtmlChecker({}, {
