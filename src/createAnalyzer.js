@@ -237,6 +237,17 @@ module.exports = () => {
             }
             audit.description = audit.result.description;
           }
+          audit.list = audit.extendedInfo && audit.extendedInfo.value ? audit.extendedInfo.value : [];
+
+
+          if (audit.details && audit.details.items) {
+            for(const [index, item] of audit.details.items.entries()){
+              audit.list[index] = audit.list[index] ?  audit.list[index] :{};
+              audit.list[index] = Object.assign({}, audit.list[index], item[0]);
+            }
+          }
+          delete audit.details;
+          delete audit.extendedInfo;
           delete audit.result;
           page.issues[issueCategory][audit.id] = audit;
         }
