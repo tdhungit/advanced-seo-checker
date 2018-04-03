@@ -155,28 +155,28 @@ module.exports = () => {
               list: broken.a.internal,
               weight: 1,
               value: broken.a.internal.length,
-              score: total.a.internal.length ? 100 - (broken.a.internal.length / total.a.internal.length) * 100 : 0
+              score: total.a.internal.length ? 100 - (broken.a.internal.length / total.a.internal.length) * 100 : 100
             },
             externalBrokenLinks: {
               description: broken.a.external.length + ' external links are broken',
               list: broken.a.external,
               weight: 1,
               value: broken.a.external.length,
-              score: total.a.external.length ? 100 - (broken.a.external.length / total.a.external.length) * 100 : 0
+              score: total.a.external.length ? 100 - (broken.a.external.length / total.a.external.length) * 100 : 100
             },
             internalBrokenImages: {
               description: broken.img.internal.length + ' internal images are broken',
               weight: 1,
               list: broken.img.internal.concat(broken.source.internal),
               value: broken.img.internal.length + broken.source.internal.length,
-              score: total.img.internal.length ? 100 - ((broken.img.internal.length + broken.source.internal.length) / (total.img.internal.length + total.source.internal.length)) * 100 : 0
+              score: total.img.internal.length ? 100 - ((broken.img.internal.length + broken.source.internal.length) / (total.img.internal.length + total.source.internal.length)) * 100 : 100
             },
             externalBrokenImages: {
               description: broken.img.external.length + ' external images are broken',
               weight: 1,
               list: broken.img.external.concat(broken.source.external),
               value: broken.img.external.length + broken.source.external.length,
-              score: total.img.external.length ? 100 - ((broken.img.external.length + broken.source.external.length) / (total.img.external.length + total.source.external.length)) * 100 : 0
+              score: total.img.external.length ? 100 - ((broken.img.external.length + broken.source.external.length) / (total.img.external.length + total.source.external.length)) * 100 : 100
             }
           };
           resolve(res);
