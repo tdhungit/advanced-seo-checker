@@ -101,7 +101,8 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
           summary: '',
           grades: [],
           value: host,
-          score: 0
+          score: 0,
+          weight: 1
         };
         const gradeScores = {
           'A+': 100,
@@ -123,6 +124,7 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
           result.grades.push(endpoint.grade);
         });
         result.score = result.grades.length ? result.score / result.grades.length : 0;
+        result.impact = result.score * result.weight;
         result.summary = !result.grades.length ? 'No SSL certificate detected' : '';
         resolve(result);
       });
