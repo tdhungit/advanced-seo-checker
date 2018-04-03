@@ -238,7 +238,7 @@ module.exports = () => {
             audit.description = audit.result.description;
           }
           audit.list = audit.extendedInfo && audit.extendedInfo.value ? audit.extendedInfo.value : [];
-
+          audit.list = audit.list.results ? audit.list.results : audit.list;
 
           if (audit.details && audit.details.items) {
             for(const [index, item] of audit.details.items.entries()){
