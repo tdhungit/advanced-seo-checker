@@ -21,6 +21,33 @@ const msg = require('./helpers/msg-helper');
 //DOCType Check
 
 module.exports = () => {
+  const getIssueCategory = (id) => {
+    const categories = {
+      'viewport': 'errors',
+      'document-title': 'errors',
+      'meta-description': 'errors',
+      'is-crawlable': 'errors',
+      'hreflang': 'errors',
+      'canonical': 'errors',
+      'errors-in-console': 'errors',
+      'http-status-code': 'warnings',
+      'link-text': 'warnings',
+      'external-anchors-use-rel-noopener': 'warnings',
+      'geolocation-on-start': 'warnings',
+      'password-inputs-can-be-pasted-into': 'warnings',
+      'appcache-manifest': 'notices',
+      'no-websql': 'notices',
+      'is-on-https': 'notices',
+      'uses-http2': 'notices',
+      'no-mutation-events': 'notices',
+      'no-document-write': 'notices',
+      'no-vulnerable-libraries': 'notices',
+      'notification-on-start': 'notices',
+      'deprecations': 'notices',
+      'manifest-short-name-length': 'notices'
+    };
+    return categories[id] ? categories[id] : 'notices';
+  };
 
   const testAccessibleImgs = ($) => {
     const totalImgs = [], accessibleImgs = [], missingAltImages = [];
@@ -34,57 +61,62 @@ module.exports = () => {
       }
     });
     return {
-      summary: missingAltImages.length + ' images don\'t have alt attributes out of ' + totalImgs.length,
+      description: missingAltImages.length + ' images don\'t have alt attributes out of ' + totalImgs.length,
       list: missingAltImages,
       value: missingAltImages.length,
-      impact: (missingAltImages.length / totalImgs.length) * 100
+      weight: 1,
+      score: 100 - (missingAltImages.length / totalImgs.length) * 100
     };
   };
 
   const testMissingTitle = (page) => {
     return {
-      summary: !page.title ? '1 page don\'t have title tags' : '',
+      description: !page.title ? '1 page don\'t have title tags' : '',
       value: page.title,
-      impact: !page.title ? 100 : 0
+      weight: 1,
+      score: page.title ? 100 : 0
     };
   };
 
   const testTooMuchTextInTitle = (page) => {
     return {
-      summary: page.title ? '1 page have too much text within the title tags' : '1 pages don\'t have title tags',
+      description: page.title ? '1 page have too much text within the title tags' : '1 pages don\'t have title tags',
       text: page.title ? page.title : '',
       value: page.title ? page.title.length <= 75 : 0,
-      impact: page.title && page.title.length <= 75 ? 0 : 100
+      weight: 1,
+      score: page.title && page.title.length <= 75 ? 100 : 0
     };
   };
 
   const testDOCType = (body) => {
     const result = {
-      summary: '',
+      description: '',
+      weight: 1,
       value: body.toLowerCase().lastIndexOf('<!doctype html>') !== -1
     };
     if (result.value === 0) {
-      result.summary = '1 page don\'t have doctype declared';
+      result.description = '1 page don\'t have doctype declared';
     }
     else {
-      result.summary = '0 page don\'t have doctype declared';
+      result.description = '0 page don\'t have doctype declared';
     }
-    result.impact = result.value ? 0 : 100;
+    result.score = result.value ? 100 : 0;
     return result;
   };
 
   const countH1 = ($) => {
     const result = {
-      summary: '',
+      description: '',
+      weight: 1,
       value: $('h1').length
     };
     if (result.value === 0) {
-      result.summary = '0 pages don\'t have an h1 heading';
+      result.description = '0 pages don\'t have an h1 heading';
     }
     else {
-      result.summary = '1 page have more than one H1 tag';
+      result.description = '1 page have more than one H1 tag';
     }
-    result.impact = result.value === 1 ? 0 : 100;
+    result.score = result.value === 1 ? 100 : 0;
     return result;
   };
 
@@ -119,28 +151,32 @@ module.exports = () => {
             total: total,
             broken: broken,
             internalBrokenLinks: {
-              summary: broken.a.internal.length + ' internal links are broken',
+              description: broken.a.internal.length + ' internal links are broken',
               list: broken.a.internal,
+              weight: 1,
               value: broken.a.internal.length,
-              impact: total.a.internal.length ? (broken.a.internal.length / total.a.internal.length) * 100 : 0
+              score: total.a.internal.length ? 100 - (broken.a.internal.length / total.a.internal.length) * 100 : 0
             },
             externalBrokenLinks: {
-              summary: broken.a.external.length + ' external links are broken',
+              description: broken.a.external.length + ' external links are broken',
               list: broken.a.external,
+              weight: 1,
               value: broken.a.external.length,
-              impact: total.a.external.length ? (broken.a.external.length / total.a.external.length) * 100 : 0
+              score: total.a.external.length ? 100 - (broken.a.external.length / total.a.external.length) * 100 : 0
             },
             internalBrokenImages: {
-              summary: broken.img.internal.length + ' internal images are broken',
+              description: broken.img.internal.length + ' internal images are broken',
+              weight: 1,
               list: broken.img.internal.concat(broken.source.internal),
               value: broken.img.internal.length + broken.source.internal.length,
-              impact: total.img.internal.length ? ((broken.img.internal.length + broken.source.internal.length) / (total.img.internal.length + total.source.internal.length)) * 100 : 0
+              score: total.img.internal.length ? 100 - ((broken.img.internal.length + broken.source.internal.length) / (total.img.internal.length + total.source.internal.length)) * 100 : 0
             },
             externalBrokenImages: {
-              summary: broken.img.external.length + ' external images are broken',
+              description: broken.img.external.length + ' external images are broken',
+              weight: 1,
               list: broken.img.external.concat(broken.source.external),
               value: broken.img.external.length + broken.source.external.length,
-              impact: total.img.external.length ? ((broken.img.external.length + broken.source.external.length) / (total.img.external.length + total.source.external.length)) * 100 : 0
+              score: total.img.external.length ? 100 - ((broken.img.external.length + broken.source.external.length) / (total.img.external.length + total.source.external.length)) * 100 : 0
             }
           };
           resolve(res);
@@ -165,26 +201,55 @@ module.exports = () => {
       page.keywords = $('meta[name=keywords]').attr('content') || null;
       page.issues = {errors: {}, warnings: {}, notices: {}};
 
-      page.heading1 = $('body h1:first-child').text().trim().replace('\n', '');
-      page.issues.warnings.totalHeadings = countH1($);
-      page.issues.errors.missingTitle = testMissingTitle(page);
-      page.issues.warnings.tooMuchTextInTitle = testTooMuchTextInTitle(page);
-      page.issues.warnings.imgAltAttribute = testAccessibleImgs($);
-      page.issues.warnings.containsDocType = testDOCType(body);
+      page.h1 = $('body h1:first-child').text().trim().replace('\n', '');
+      page.issues.warnings['multiple-h1'] = countH1($);
+      page.issues.errors['missing-title'] = testMissingTitle(page);
+      page.issues.warnings['too-much-text-in-title'] = testTooMuchTextInTitle(page);
+      page.issues.warnings['missing-alt-attribute'] = testAccessibleImgs($);
+      page.issues.warnings['doc-type'] = testDOCType(body);
 
-      discoverBrokenLinks(url, body).then(function (data) {
-        page.blc = data;
-        page.issues.errors.internalBrokenLinks = page.blc.internalBrokenLinks;
-        page.issues.errors.externalBrokenLinks = page.blc.externalBrokenLinks;
-        page.issues.errors.internalBrokenImages = page.blc.internalBrokenImages;
-        page.issues.errors.externalBrokenImages = page.blc.externalBrokenImages;
-        msg.yellowBright('Basic analysis of ' + url + ' was done. Starting Lighthouse test...');
+      const promises = [discoverBrokenLinks(url, body), createLHAnalyzer().analyzePage(url)];
+      Promise.all(promises).then(function (results) {
+        page.blc = results[0];
+        page.lighthousedata = results[1];
 
-        createLHAnalyzer().analyzePage(url).then(function (data) {
-          msg.yellow('Analyzing: ' + url + ' was done');
-          page.lighthousedata = data;
-          resolve(page);
-        });
+        page.issues.errors['internal-broken-links'] = page.blc.internalBrokenLinks;
+        page.issues.errors['external-broken-links'] = page.blc.externalBrokenLinks;
+        page.issues.errors['internal-broken-images'] = page.blc.internalBrokenImages;
+        page.issues.errors['external-broken-images'] = page.blc.externalBrokenImages;
+
+        const seoCategory = page.lighthousedata.reportCategories.filter((auditCategory) => {
+          return auditCategory.id === 'seo';
+        })[0];
+        const bestPracticesCategory = page.lighthousedata.reportCategories.filter((auditCategory) => {
+          return auditCategory.id === 'best-practices';
+        })[0];
+
+        const audits = seoCategory.audits.concat(bestPracticesCategory.audits);
+        let mobileFriendlyAudit = {};
+        for (const audit of audits) {
+          mobileFriendlyAudit = audit.id === 'mobile-friendly' ? audit : mobileFriendlyAudit;
+          const issueCategory = getIssueCategory(audit.id);
+
+          if (audit.result) {
+            for (const key in audit.result) {
+              audit[key] = audit[key] ? audit[key] : audit.result[key];
+            }
+            audit.description = audit.result.description;
+          }
+          delete audit.result;
+          page.issues[issueCategory][audit.id] = audit;
+        }
+        for (const categoryKey in page.issues) {
+          const category = page.issues[categoryKey];
+          for (const issueKey in category) {
+            category[issueKey].impact = (100 - category[issueKey].score) * category[issueKey].weight;
+          }
+        }
+
+        page.isMobileFriendly = !mobileFriendlyAudit.score;
+        msg.yellow('Analyzing: ' + url + ' was done');
+        resolve(page);
       });
     };
 

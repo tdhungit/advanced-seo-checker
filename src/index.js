@@ -61,7 +61,7 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     const onBodiesLoad = (bodies, resolve) => {
       msg.appMsg('Retrieving urls bodies done');
       msg.appMsg('Start analyzing urls');
-      const promises = [validateSitemap(), validateRobots(), validateRobots(normalizeUrl(uri)),
+      const promises = [validateSitemap(), validateRobots(), testSSLCertificate(normalizeUrl(uri)),
         analyzer.analyzePages(urls, bodies)];
       Promise.all(promises).then(function (result) {
         res = result[3];
