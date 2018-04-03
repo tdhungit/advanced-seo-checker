@@ -1,6 +1,9 @@
 const cheerio = require('cheerio')
 const blc = require('broken-link-checker');
 const stringSimilarity = require('string-similarity');
+const createLHAnalyzer = require('./createLighthouseAnalyzer');
+const msg = require('./helpers/msg-helper');
+
 //TESTS COVERED
 //Missing title tag
 //Missing description tag
@@ -103,7 +106,7 @@ module.exports = () => {
 
           const type = result.internal ? 'internal' : 'external';
           if (!total[result.html.tagName]) {
-            console.log('New tag detected: ' + result.html.tagName);
+            msg.appMsg('New tag detected: ' + result.html.tagName);
             total[result.html.tagName] = {internal: [], external: []};
           }
           total[result.html.tagName][type].push(result);
@@ -153,7 +156,7 @@ module.exports = () => {
   const analyzePage = (url, body) => {
     const $ = cheerio.load(body), page = {};
     page.url = url;
-    console.log('Analyzing: ' + url);
+    msg.yellowBright('Analyzing: ' + url);
 
     const init = (resolve, reject) => {
       page.title = $('title').text() || null;
@@ -175,8 +178,13 @@ module.exports = () => {
         page.issues.errors.externalBrokenLinks = page.blc.externalBrokenLinks;
         page.issues.errors.internalBrokenImages = page.blc.internalBrokenImages;
         page.issues.errors.externalBrokenImages = page.blc.externalBrokenImages;
-        console.log('Analyzing: ' + url + ' was done');
-        resolve(page);
+        msg.yellowBright('Basic analysis of ' + url + ' was done. Starting Lighthouse test...');
+
+        createLHAnalyzer().analyzePage(url).then(function (data) {
+          msg.yellow('Analyzing: ' + url + ' was done');
+          page.lighthousedata = data;
+          resolve(page);
+        });
       });
     };
 
@@ -193,16 +201,17 @@ module.exports = () => {
       }
       Promise.all(promises).then(function (pages) {
         summary.pages = pages;
-        testDuplicate('duplicateTitlePages', 'title');
-        testDuplicate('duplicateDescPages', 'description');
-        testDuplicateContent(urls, bodies);
-        console.log('All pages were analyzed');
+        // testDuplicate('duplicateTitlePages', 'title');
+        // testDuplicate('duplicateDescPages', 'description');
+        // testDuplicateContent(urls, bodies);
+        msg.green('All pages were analyzed');
         resolve(summary);
       });
     };
 
     const testDuplicateContent = (urls, bodies) => {
-      summary.issues.errors.duplicateContentPages = {};
+      summary.issues.errors.duplicateContentPages = {impact: 0};
+      let numberOfDuplicates = 0;
       const skip = {};
       for (let [firstIndex, first] of urls.entries()) {
         if (skip[first]) {
@@ -221,13 +230,16 @@ module.exports = () => {
             similarity: similarity
           };
           summary.issues.errors.duplicateContentPages[first].push(compareItem);
+          numberOfDuplicates++;
           skip[second] = true;
         }
       }
+      summary.issues.errors.duplicateContentPages.impact = numberOfDuplicates / (Math.sqrt(urls.length) / 2);
     };
 
     const testDuplicate = (skey, pkey) => {
       summary.issues.errors[skey] = {};
+      let numberOfDuplicates = 0;
       const skip = {};
       for (let first of summary.pages) {
         if (skip[first.url]) {
@@ -245,9 +257,11 @@ module.exports = () => {
           }
           compareItem[pkey] = second[pkey];
           summary.issues.errors[skey][first.url].push(compareItem);
+          numberOfDuplicates++;
           skip[second.url] = true;
         }
       }
+      summary.issues.errors[skey].impact = numberOfDuplicates / (Math.sqrt(summary.pages.length) / 2);
     };
     let promise = new Promise(init);
     return promise;

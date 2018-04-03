@@ -6,6 +6,7 @@ const normalizeUrl = require('normalize-url');
 const mitt = require('mitt');
 const createAnalyzer = require('./createAnalyzer');
 const ssllabs = require("node-ssllabs");
+const msg = require('./helpers/msg-helper');
 
 module.exports = function AdvancedSEOChecker(uri, opts) {
 
@@ -58,16 +59,16 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     const analyzer = createAnalyzer();
     urls = Array.isArray(urls) ? urls : [urls];
     const onBodiesLoad = (bodies, resolve) => {
-      console.log('Retrieving urls bodies done');
-      console.log('Start analyzing urls');
-      const promises = [validateSitemap(), validateRobots(), testSSLCertificate(normalizeUrl(uri)),
+      msg.appMsg('Retrieving urls bodies done');
+      msg.appMsg('Start analyzing urls');
+      const promises = [validateSitemap(), validateRobots(), validateRobots(normalizeUrl(uri)),
         analyzer.analyzePages(urls, bodies)];
       Promise.all(promises).then(function (result) {
         res = result[3];
         res.issues.notices.sitemap = result[0];
         res.issues.notices.robots = result[1];
         res.issues.warnings.ssl = result[2];
-        console.log('Analyzing urls done');
+        msg.green('Analyzing urls done');
         resolve(res);
       });
     };
@@ -81,7 +82,7 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
         for (let i = 0; i < urls.length; i++) {
           bodiesPromises.push(load(urls[i]));
         }
-        console.log('Start retrieving urls bodies');
+        msg.appMsg('Start retrieving urls bodies');
         Promise.all(bodiesPromises).then(function (bodies) {
           onBodiesLoad(bodies, resolve);
         });
@@ -93,9 +94,9 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
   };
   const testSSLCertificate = (url) => {
     const init = (resolve, reject) => {
-      console.log('Starting SSLLabs test');
+      msg.appMsg('Starting SSLLabs test');
       ssllabs.scan(url, function (err, host) {
-        console.log('SSLLabs test was done');
+        msg.appMsg('SSLLabs test was done');
         const result = {
           summary: '',
           grades: [],
@@ -134,7 +135,7 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     let url = parsedUrl.href;
     const init = (resolve, reject) => {
       urlExists(normalizeUrl(url) + '/sitemap.xml', function (err, exists) {
-        console.log('Sitemap test was done');
+        msg.appMsg('Sitemap test was done');
         resolve({
           summary: !exists ? 'Sitemap.xml not found' : 'Sitemap.xml was found',
           value: exists
@@ -148,7 +149,7 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     let url = parsedUrl.href;
     const init = (resolve, reject) => {
       urlExists(normalizeUrl(url) + '/robots.txt', function (err, exists) {
-        console.log('robots test was done');
+        msg.appMsg('robots test was done');
         resolve({
           summary: !exists ? 'Robots.txt not found' : 'Robots.txt was found',
           value: exists
