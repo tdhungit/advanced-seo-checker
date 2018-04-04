@@ -19,9 +19,16 @@ module.exports = () => {
   };
 
   const analyzePage = (url) => {
+    let trialsLimit = 5;
     const init = (resolve, reject) => {
+      trialsLimit--;
+      if (trialsLimit === 0) {
+        reject();
+      }
       launchChromeAndRunLighthouse(url, flags).then(results => {
         resolve(results);
+      }).catch((error) => {
+        init(resolve, reject);
       });
     };
 
