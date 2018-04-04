@@ -9,7 +9,12 @@ const ssllabs = require("node-ssllabs");
 const msg = require('./helpers/msg-helper');
 
 module.exports = function AdvancedSEOChecker(uri, opts) {
-
+  const defaultOpts = {
+    ignoreSSLTest: true,
+    ignoreRobotsTest: true,
+    ignoreSitemapTest: true
+  };
+  const options = Object.assign({}, defaultOpts, opts);
   if (!uri) {
     throw new Error('Requires a valid URL.');
   }
@@ -65,9 +70,16 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
         analyzer.analyzePages(urls, bodies)];
       Promise.all(promises).then(function (result) {
         res = result[3];
-        res.issues.notices.sitemap = result[0];
-        res.issues.notices.robots = result[1];
-        res.issues.warnings.ssl = result[2];
+        if(!options.ignoreSSLTest){
+          res.issues.warnings.ssl = result[2];
+        }
+        if(!options.ignoreSitemapTest){
+          res.issues.notices.sitemap = result[0];
+        }
+        if(!options.ignoreRobotsTest){
+          res.issues.notices.robots = result[1];
+        }
+
         msg.green('Analyzing urls done');
         resolve(res);
       });
@@ -94,6 +106,10 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
   };
   const testSSLCertificate = (url) => {
     const init = (resolve, reject) => {
+      if(options.ignoreSSLTest){
+        return resolve();
+      }
+
       msg.appMsg('Starting SSLLabs test');
       ssllabs.scan(url, function (err, host) {
         msg.appMsg('SSLLabs test was done');
@@ -136,6 +152,9 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
   const validateSitemap = () => {
     let url = parsedUrl.href;
     const init = (resolve, reject) => {
+      if(options.ignoreSitemapTest){
+        return resolve();
+      }
       urlExists(normalizeUrl(url) + '/sitemap.xml', function (err, exists) {
         msg.appMsg('Sitemap test was done');
         resolve({
@@ -150,6 +169,9 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
   const validateRobots = () => {
     let url = parsedUrl.href;
     const init = (resolve, reject) => {
+      if(options.ignoreRobotsTest){
+        return resolve();
+      }
       urlExists(normalizeUrl(url) + '/robots.txt', function (err, exists) {
         msg.appMsg('robots test was done');
         resolve({
