@@ -1,5 +1,6 @@
 const lighthouse = require('lighthouse');
 const chromeLauncher = require('chrome-launcher');
+const msg = require('./helpers/msg-helper');
 
 module.exports = () => {
   function launchChromeAndRunLighthouse(url, flags = {}, config = null) {
