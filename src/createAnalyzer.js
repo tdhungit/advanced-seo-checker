@@ -65,7 +65,7 @@ module.exports = () => {
       list: missingAltImages,
       value: missingAltImages.length,
       weight: 1,
-      score: 100 - (missingAltImages.length / totalImgs.length) * 100
+      score: totalImgs.length ? 100 - (missingAltImages.length / totalImgs.length) * 100 : 100
     };
   };
 
@@ -255,14 +255,15 @@ module.exports = () => {
             delete audit.result;
             page.issues[issueCategory][audit.id] = audit;
           }
-          for (const categoryKey in page.issues) {
-            const category = page.issues[categoryKey];
-            for (const issueKey in category) {
-              category[issueKey].impact = (100 - category[issueKey].score) * category[issueKey].weight;
-            }
-          }
 
           page.isMobileFriendly = !mobileFriendlyAudit.score;
+        }
+
+        for (const categoryKey in page.issues) {
+          const category = page.issues[categoryKey];
+          for (const issueKey in category) {
+            category[issueKey].impact = (100 - category[issueKey].score) * category[issueKey].weight;
+          }
         }
 
         msg.yellow('Analyzing: ' + url + ' was done');
