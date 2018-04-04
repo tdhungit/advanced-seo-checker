@@ -15,19 +15,24 @@ module.exports = () => {
   }
 
   const flags = {
-    chromeFlags: ['--headless']
+    chromeFlags: ['--headless'],
+    handleSIGINT: true,
+    maxConnectionRetries: 10
   };
 
   const analyzePage = (url) => {
     let trialsLimit = 5;
+    let lunchingError = {};
     const init = (resolve, reject) => {
       trialsLimit--;
       if (trialsLimit === 0) {
-        reject();
+        return resolve({error: lunchingError});
       }
       launchChromeAndRunLighthouse(url, flags).then(results => {
         resolve(results);
       }).catch((error) => {
+        lunchingError = error;
+        msg.error(lunchingError);
         init(resolve, reject);
       });
     };

@@ -218,47 +218,53 @@ module.exports = () => {
         page.issues.errors['internal-broken-images'] = page.blc.internalBrokenImages;
         page.issues.errors['external-broken-images'] = page.blc.externalBrokenImages;
 
-        const seoCategory = page.lighthousedata.reportCategories.filter((auditCategory) => {
-          return auditCategory.id === 'seo';
-        })[0];
-        const bestPracticesCategory = page.lighthousedata.reportCategories.filter((auditCategory) => {
-          return auditCategory.id === 'best-practices';
-        })[0];
+        if (page.lighthousedata.error) {
 
-        const audits = seoCategory.audits.concat(bestPracticesCategory.audits);
-        let mobileFriendlyAudit = {};
-        for (const audit of audits) {
-          mobileFriendlyAudit = audit.id === 'mobile-friendly' ? audit : mobileFriendlyAudit;
-          const issueCategory = getIssueCategory(audit.id);
-
-          if (audit.result) {
-            for (const key in audit.result) {
-              audit[key] = audit[key] ? audit[key] : audit.result[key];
-            }
-            audit.description = audit.result.description;
-          }
-          audit.list = audit.extendedInfo && audit.extendedInfo.value ? audit.extendedInfo.value : [];
-          audit.list = audit.list.results ? audit.list.results : audit.list;
-
-          if (audit.details && audit.details.items) {
-            for(const [index, item] of audit.details.items.entries()){
-              audit.list[index] = audit.list[index] ?  audit.list[index] :{};
-              audit.list[index] = Object.assign({}, audit.list[index], item[0]);
-            }
-          }
-          delete audit.details;
-          delete audit.extendedInfo;
-          delete audit.result;
-          page.issues[issueCategory][audit.id] = audit;
         }
-        for (const categoryKey in page.issues) {
-          const category = page.issues[categoryKey];
-          for (const issueKey in category) {
-            category[issueKey].impact = (100 - category[issueKey].score) * category[issueKey].weight;
+        else {
+          const seoCategory = page.lighthousedata.reportCategories.filter((auditCategory) => {
+            return auditCategory.id === 'seo';
+          })[0];
+          const bestPracticesCategory = page.lighthousedata.reportCategories.filter((auditCategory) => {
+            return auditCategory.id === 'best-practices';
+          })[0];
+
+          const audits = seoCategory.audits.concat(bestPracticesCategory.audits);
+          let mobileFriendlyAudit = {};
+          for (const audit of audits) {
+            mobileFriendlyAudit = audit.id === 'mobile-friendly' ? audit : mobileFriendlyAudit;
+            const issueCategory = getIssueCategory(audit.id);
+
+            if (audit.result) {
+              for (const key in audit.result) {
+                audit[key] = audit[key] ? audit[key] : audit.result[key];
+              }
+              audit.description = audit.result.description;
+            }
+            audit.list = audit.extendedInfo && audit.extendedInfo.value ? audit.extendedInfo.value : [];
+            audit.list = audit.list.results ? audit.list.results : audit.list;
+
+            if (audit.details && audit.details.items) {
+              for (const [index, item] of audit.details.items.entries()) {
+                audit.list[index] = audit.list[index] ? audit.list[index] : {};
+                audit.list[index] = Object.assign({}, audit.list[index], item[0]);
+              }
+            }
+            delete audit.details;
+            delete audit.extendedInfo;
+            delete audit.result;
+            page.issues[issueCategory][audit.id] = audit;
           }
+          for (const categoryKey in page.issues) {
+            const category = page.issues[categoryKey];
+            for (const issueKey in category) {
+              category[issueKey].impact = (100 - category[issueKey].score) * category[issueKey].weight;
+            }
+          }
+
+          page.isMobileFriendly = !mobileFriendlyAudit.score;
         }
 
-        page.isMobileFriendly = !mobileFriendlyAudit.score;
         msg.yellow('Analyzing: ' + url + ' was done');
         resolve(page);
       });
