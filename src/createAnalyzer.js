@@ -187,7 +187,16 @@ module.exports = (options) => {
 
     let promise = new Promise(init);
     return promise;
-  }
+  };
+
+  const calculateIssuesImpact = (page) => {
+    for (const categoryKey in page.issues) {
+      const category = page.issues[categoryKey];
+      for (const issueKey in category) {
+        category[issueKey].impact = (100 - category[issueKey].score) * category[issueKey].weight;
+      }
+    }
+  };
 
   const analyzePage = (url, body) => {
     const $ = cheerio.load(body), page = {};
@@ -195,6 +204,7 @@ module.exports = (options) => {
     msg.yellowBright('Analyzing: ' + url);
 
     const init = (resolve, reject) => {
+
       page.title = $('title').text() || null;
       page.description = $('meta[name=description]').attr('content') || null;
       page.author = $('meta[name=author]').attr('content') || null;
@@ -208,7 +218,7 @@ module.exports = (options) => {
       page.issues.warnings['missing-alt-attribute'] = testAccessibleImgs($);
       page.issues.warnings['doc-type'] = testDOCType(body);
 
-      if(options.ignoreInternalPagesIssues){
+      if (options.ignoreInternalPagesIssues) {
         msg.yellow('Ignoring internal issues: ' + url);
         return resolve(page);
       }
@@ -264,12 +274,7 @@ module.exports = (options) => {
           page.isMobileFriendly = !mobileFriendlyAudit.score;
         }
 
-        for (const categoryKey in page.issues) {
-          const category = page.issues[categoryKey];
-          for (const issueKey in category) {
-            category[issueKey].impact = (100 - category[issueKey].score) * category[issueKey].weight;
-          }
-        }
+        calculateIssuesImpact(page);
 
         msg.yellow('Analyzing: ' + url + ' was done');
         resolve(page);
@@ -292,13 +297,15 @@ module.exports = (options) => {
         testDuplicate('duplicateTitlePages', 'title');
         testDuplicate('duplicateDescPages', 'description');
         // testDuplicateContent(urls, bodies);
+
+        calculateIssuesImpact(summary);
         msg.green('All pages were analyzed');
         resolve(summary);
       });
     };
 
     const testDuplicateContent = (urls, bodies) => {
-      summary.issues.errors.duplicateContentPages = {impact: 0};
+      summary.issues.errors.duplicateContentPages = {score: 0, weight: 1, impact: 0};
       let numberOfDuplicates = 0;
       const skip = {};
       for (let [firstIndex, first] of urls.entries()) {
@@ -322,34 +329,34 @@ module.exports = (options) => {
           skip[second] = true;
         }
       }
-      summary.issues.errors.duplicateContentPages.impact = numberOfDuplicates / (Math.sqrt(urls.length) / 2);
+      summary.issues.errors.duplicateContentPages.score = 100 - (numberOfDuplicates / (Math.sqrt(urls.length) / 2)) * 100;
     };
 
     const testDuplicate = (skey, pkey) => {
-      summary.issues.errors[skey] = {};
+      summary.issues.errors[skey] = {score: 0, weight: 1, impact: 0, list: {}};
       let numberOfDuplicates = 0;
-      const skip = {};
-      for (let first of summary.pages) {
-        if (skip[first.url]) {
-          continue;
-        }
-        for (let second of summary.pages) {
-          if (first[pkey] !== second[pkey] || skip[second.url] || first.url === second.url) {
+      let trials = 0;
+      for (let i = 0; i < summary.pages.length; i++) {
+        const first = summary.pages[i];
+
+        for (let j = i + 1; j < summary.pages.length; j++) {
+          const second = summary.pages[j];
+          trials++;
+          if (first[pkey] !== second[pkey]) {
             continue;
           }
           if (!summary.issues.errors[skey][first.url]) {
-            summary.issues.errors[skey][first.url] = [];
+            summary.issues.errors[skey].list[first.url] = [];
           }
           const compareItem = {
             url: second.url
           }
           compareItem[pkey] = second[pkey];
-          summary.issues.errors[skey][first.url].push(compareItem);
+          summary.issues.errors[skey].list[first.url].push(compareItem);
           numberOfDuplicates++;
-          skip[second.url] = true;
         }
       }
-      summary.issues.errors[skey].impact = numberOfDuplicates / (Math.sqrt(summary.pages.length) / 2);
+      summary.issues.errors[skey].score = 100 - (numberOfDuplicates / trials) * 100;
     };
     let promise = new Promise(init);
     return promise;
