@@ -167,7 +167,7 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
           summary: !exists ? 'Sitemap.xml not found' : 'Sitemap.xml was found',
           value: exists,
           weight: 1,
-          score: exists ? 100 ? 0,
+          score: exists ? 100 : 0,
           impact: exists ? 100 : 0
         });
       });
@@ -187,7 +187,7 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
           summary: !exists ? 'Robots.txt not found' : 'Robots.txt was found',
           value: exists,
           weight: 1,
-          score: exists ? 100 ? 0,
+          score: exists ? 100 : 0,
           impact: exists ? 100 : 0
         });
       });
