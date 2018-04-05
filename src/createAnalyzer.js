@@ -333,7 +333,8 @@ module.exports = (options) => {
     };
 
     const testDuplicate = (skey, pkey) => {
-      summary.issues.errors[skey] = {score: 0, weight: 1, impact: 0, list: {}};
+      const list = {};
+      summary.issues.errors[skey] = {score: 0, weight: 1, impact: 0, list: []};
       let numberOfDuplicates = 0;
       let trials = 0;
       for (let i = 0; i < summary.pages.length; i++) {
@@ -346,15 +347,19 @@ module.exports = (options) => {
             continue;
           }
           if (!summary.issues.errors[skey][first.url]) {
-            summary.issues.errors[skey].list[first.url] = [];
+            list[first.url] = [];
           }
           const compareItem = {
             url: second.url
           }
           compareItem[pkey] = second[pkey];
-          summary.issues.errors[skey].list[first.url].push(compareItem);
+          list[first.url].push(compareItem);
           numberOfDuplicates++;
         }
+      }
+      for(const key in list){
+        list[key].source = key;
+        summary.issues.errors[skey].list.push(list[key]);
       }
       summary.issues.errors[skey].score = 100 - (numberOfDuplicates / trials) * 100;
     };
