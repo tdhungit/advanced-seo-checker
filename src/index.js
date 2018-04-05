@@ -16,7 +16,7 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     ignoreInternalPagesIssues: false
   };
   const options = Object.assign({}, defaultOpts, opts);
-  if(options.ignoreInternalPagesIssues){
+  if (options.ignoreInternalPagesIssues) {
     options.ignoreSSLTest = false;
     options.ignoreRobotsTest = false;
     options.ignoreSitemapTest = false;
@@ -76,13 +76,13 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
         analyzer.analyzePages(urls, bodies)];
       Promise.all(promises).then(function (result) {
         res = result[3];
-        if(!options.ignoreSSLTest){
+        if (!options.ignoreSSLTest) {
           res.issues.warnings.ssl = result[2];
         }
-        if(!options.ignoreSitemapTest){
+        if (!options.ignoreSitemapTest) {
           res.issues.notices.sitemap = result[0];
         }
-        if(!options.ignoreRobotsTest){
+        if (!options.ignoreRobotsTest) {
           res.issues.notices.robots = result[1];
         }
 
@@ -112,7 +112,7 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
   };
   const testSSLCertificate = (url) => {
     const init = (resolve, reject) => {
-      if(options.ignoreSSLTest){
+      if (options.ignoreSSLTest) {
         return resolve();
       }
 
@@ -158,14 +158,17 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
   const validateSitemap = () => {
     let url = parsedUrl.href;
     const init = (resolve, reject) => {
-      if(options.ignoreSitemapTest){
+      if (options.ignoreSitemapTest) {
         return resolve();
       }
       urlExists(normalizeUrl(url) + '/sitemap.xml', function (err, exists) {
         msg.appMsg('Sitemap test was done');
         resolve({
           summary: !exists ? 'Sitemap.xml not found' : 'Sitemap.xml was found',
-          value: exists
+          value: exists,
+          weight: 1,
+          score: exists ? 100 ? 0,
+          impact: exists ? 100 : 0
         });
       });
     };
@@ -175,14 +178,17 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
   const validateRobots = () => {
     let url = parsedUrl.href;
     const init = (resolve, reject) => {
-      if(options.ignoreRobotsTest){
+      if (options.ignoreRobotsTest) {
         return resolve();
       }
       urlExists(normalizeUrl(url) + '/robots.txt', function (err, exists) {
         msg.appMsg('robots test was done');
         resolve({
           summary: !exists ? 'Robots.txt not found' : 'Robots.txt was found',
-          value: exists
+          value: exists,
+          weight: 1,
+          score: exists ? 100 ? 0,
+          impact: exists ? 100 : 0
         });
       });
     };
