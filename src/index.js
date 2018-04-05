@@ -12,9 +12,15 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
   const defaultOpts = {
     ignoreSSLTest: true,
     ignoreRobotsTest: true,
-    ignoreSitemapTest: true
+    ignoreSitemapTest: true,
+    ignoreInternalPagesIssues: true
   };
   const options = Object.assign({}, defaultOpts, opts);
+  if(options.ignoreInternalPagesIssues){
+    options.ignoreSSLTest = false;
+    options.ignoreRobotsTest = false;
+    options.ignoreSitemapTest = false;
+  }
   if (!uri) {
     throw new Error('Requires a valid URL.');
   }
@@ -61,7 +67,7 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
   };
   const analyze = (urls, bodies) => {
     let res = {};
-    const analyzer = createAnalyzer();
+    const analyzer = createAnalyzer(options);
     urls = Array.isArray(urls) ? urls : [urls];
     const onBodiesLoad = (bodies, resolve) => {
       msg.appMsg('Retrieving urls bodies done');

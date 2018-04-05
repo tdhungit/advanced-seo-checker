@@ -20,7 +20,7 @@ const msg = require('./helpers/msg-helper');
 //SSLLabs Integration
 //DOCType Check
 
-module.exports = () => {
+module.exports = (options) => {
   const getIssueCategory = (id) => {
     const categories = {
       'viewport': 'errors',
@@ -208,6 +208,11 @@ module.exports = () => {
       page.issues.warnings['missing-alt-attribute'] = testAccessibleImgs($);
       page.issues.warnings['doc-type'] = testDOCType(body);
 
+      if(options.ignoreInternalPagesIssues){
+        msg.yellow('Ignoring internal issues: ' + url);
+        return resolve(page);
+      }
+
       const promises = [discoverBrokenLinks(url, body), createLHAnalyzer().analyzePage(url)];
       Promise.all(promises).then(function (results) {
         page.blc = results[0];
@@ -284,8 +289,8 @@ module.exports = () => {
       }
       Promise.all(promises).then(function (pages) {
         summary.pages = pages;
-        // testDuplicate('duplicateTitlePages', 'title');
-        // testDuplicate('duplicateDescPages', 'description');
+        testDuplicate('duplicateTitlePages', 'title');
+        testDuplicate('duplicateDescPages', 'description');
         // testDuplicateContent(urls, bodies);
         msg.green('All pages were analyzed');
         resolve(summary);
