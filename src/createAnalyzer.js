@@ -361,7 +361,7 @@ module.exports = (options) => {
         list[key].source = key;
         summary.issues.errors[skey].list.push(list[key]);
       }
-      summary.issues.errors[skey].score = 100 - (numberOfDuplicates / trials) * 100;
+      summary.issues.errors[skey].score = trials ? 100 - (numberOfDuplicates / trials) * 100 : 100;
     };
     let promise = new Promise(init);
     return promise;
