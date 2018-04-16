@@ -140,6 +140,7 @@ module.exports = (options) => {
           if (!total[result.html.tagName]) {
             msg.appMsg('New tag detected: ' + result.html.tagName);
             total[result.html.tagName] = {internal: [], external: []};
+            broken[result.html.tagName] = {internal: [], external: []};
           }
           total[result.html.tagName][type].push(result);
           if (result.broken) {
