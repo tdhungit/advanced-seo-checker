@@ -18,7 +18,7 @@ module.exports = () => {
   const flags = {
     chromeFlags: ['--headless'],
     handleSIGINT: true,
-    maxConnectionRetries: 10
+    maxConnectionRetries: 2
   };
 
   const analyzePage = (url) => {
