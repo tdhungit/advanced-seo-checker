@@ -224,15 +224,17 @@ module.exports = (options) => {
         return resolve(page);
       }
 
-      const promises = [discoverBrokenLinks(url, body), createLHAnalyzer().analyzePage(url)];
+      // const promises = [discoverBrokenLinks(url, body), createLHAnalyzer().analyzePage(url)];
+      const promises = [createLHAnalyzer().analyzePage(url)];
       Promise.all(promises).then(function (results) {
-        page.blc = results[0];
-        page.lighthousedata = results[1];
+        // page.blc = results[0];
+        // page.lighthousedata = results[1];
+        page.lighthousedata = results[0];
 
-        page.issues.errors['internal-broken-links'] = page.blc.internalBrokenLinks;
-        page.issues.errors['external-broken-links'] = page.blc.externalBrokenLinks;
-        page.issues.errors['internal-broken-images'] = page.blc.internalBrokenImages;
-        page.issues.errors['external-broken-images'] = page.blc.externalBrokenImages;
+        // page.issues.errors['internal-broken-links'] = page.blc.internalBrokenLinks;
+        // page.issues.errors['external-broken-links'] = page.blc.externalBrokenLinks;
+        // page.issues.errors['internal-broken-images'] = page.blc.internalBrokenImages;
+        // page.issues.errors['external-broken-images'] = page.blc.externalBrokenImages;
 
         if (page.lighthousedata.error) {
 
