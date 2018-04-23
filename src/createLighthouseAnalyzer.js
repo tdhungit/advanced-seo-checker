@@ -10,15 +10,31 @@ module.exports = () => {
     return chromeLauncher.launch(flags).then(chrome => {
       flags.port = chrome.port;
 
-      return lighthouse(url, flags, config).then(results => {
-        // The gathered artifacts are typically removed as they can be quite large (~50MB+)
-        delete results.artifacts;
-        return chrome.kill().then(() => results)
-      });
+      function init(resolve, reject){
+        msg.info('Waiting for Chrome instance to be ready');
+        setTimeout(function(){
+          msg.info('Testing using lighthouse using nodejs');
+          //Wait to make sure that chrome instance is there and ready to serve
+          lighthouse(url, flags, config).then(results => {
+            // The gathered artifacts are typically removed as they can be quite large (~50MB+)
+            delete results.artifacts;
+            chrome.kill().then(() => {
+              msg.info('Chrome instance was killed successfully');
+              resolve(results);
+            });
+          }).catch((error) => {
+            reject(error);
+          });
+        }, 5000);
+        
+      }
+      let promise = new Promise(init);
+      return promise;
+      
     });
   }
   function launchChromeAndRunLighthouseViaBash(url, flags = {}, config = null) {
-     
+     msg.info('Testing using enviroment lighthouse using bash script');
     function init(resolve, reject){
       const jsonName = crypto.createHash('md5').update(url).digest('hex') + '.json';
       var yourscript = exec("lighthouse '" + url + "' --quiet --chrome-flags='--headless' --output=json --output-path=" + jsonName,
@@ -27,6 +43,7 @@ module.exports = () => {
               const results = JSON.parse(fs.readFileSync(jsonName, 'utf8'));
               delete results.artifacts;
               setTimeout(function(){
+                msg.info('Deleting ' + jsonName);
                 fs.unlink(jsonName);
               }, 1000);
               resolve(results);

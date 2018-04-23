@@ -18,4 +18,7 @@ module.exports.blue = function (msg) {
 module.exports.error = function (msg) {
   console.log(chalk.red(msg));
 };
+module.exports.info = function (msg) {
+  console.log(chalk.white(msg));
+};
 
