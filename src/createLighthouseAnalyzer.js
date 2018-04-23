@@ -1,6 +1,9 @@
 const lighthouse = require('lighthouse');
 const chromeLauncher = require('chrome-launcher');
 const msg = require('./helpers/msg-helper');
+const exec = require('child_process').exec;
+const crypto = require('crypto');
+const fs = require('fs');
 
 module.exports = () => {
   function launchChromeAndRunLighthouse(url, flags = {}, config = null) {
@@ -14,7 +17,26 @@ module.exports = () => {
       });
     });
   }
-
+  function launchChromeAndRunLighthouseViaBash(url, flags = {}, config = null) {
+     
+    function init(resolve, reject){
+      const jsonName = crypto.createHash('md5').update(url).digest('hex') + '.json';
+      var yourscript = exec('lighthouse ' + url + ' --quiet --chrome-flags="--headless" --output=json --output-path=' + jsonName,
+        (error, stdout, stderr) => {
+            if (error === null) {
+              const results = JSON.parse(fs.readFileSync(jsonName, 'utf8'));
+              delete results.artifacts;
+              fs.unlink(jsonName);
+              resolve(results);
+            } else{
+              reject(error);
+            }
+        });
+    }
+    let promise = new Promise(init);
+    return promise;
+  }
+  
   const flags = {
     chromeFlags: ['--headless'],
     handleSIGINT: true,
@@ -22,20 +44,28 @@ module.exports = () => {
   };
 
   const analyzePage = (url) => {
-    let trialsLimit = 5;
+    let trialsLimit = 2;
     let lunchingError = {};
     const init = (resolve, reject) => {
       trialsLimit--;
       if (trialsLimit === 0) {
-        return resolve({error: lunchingError});
+        launchChromeAndRunLighthouseViaBash(url, flags).then(results => {
+          resolve(results);
+        }).catch((error) => {
+          lunchingError = error;
+          msg.error(lunchingError);
+          init(resolve, reject);
+        });
       }
-      launchChromeAndRunLighthouse(url, flags).then(results => {
-        resolve(results);
-      }).catch((error) => {
-        lunchingError = error;
-        msg.error(lunchingError);
-        init(resolve, reject);
-      });
+      else {
+        launchChromeAndRunLighthouse(url, flags).then(results => {
+          resolve(results);
+        }).catch((error) => {
+          lunchingError = error;
+          msg.error(lunchingError);
+          init(resolve, reject);
+        });
+      }
     };
 
     let promise = new Promise(init);
