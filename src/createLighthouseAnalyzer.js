@@ -26,7 +26,9 @@ module.exports = () => {
             if (error === null) {
               const results = JSON.parse(fs.readFileSync(jsonName, 'utf8'));
               delete results.artifacts;
-              fs.unlink(jsonName);
+              setTimeout(function(){
+                fs.unlink(jsonName);
+              }, 1000);
               resolve(results);
             } else{
               reject(error);
