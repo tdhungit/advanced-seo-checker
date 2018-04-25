@@ -10,9 +10,9 @@ module.exports = () => {
     return chromeLauncher.launch(flags).then(chrome => {
       flags.port = chrome.port;
 
-      function init(resolve, reject){
+      function init(resolve, reject) {
         msg.info('Waiting for Chrome instance to be ready');
-        setTimeout(function(){
+        setTimeout(function () {
           msg.info('Testing using lighthouse using nodejs');
           //Wait to make sure that chrome instance is there and ready to serve
           lighthouse(url, flags, config).then(results => {
@@ -26,38 +26,42 @@ module.exports = () => {
             reject(error);
           });
         }, 5000);
-        
+
       }
+
       let promise = new Promise(init);
       return promise;
-      
+
     });
   }
+
   function launchChromeAndRunLighthouseViaBash(url, flags = {}, config = null) {
-     msg.info('Testing using enviroment lighthouse using bash script');
-    function init(resolve, reject){
+    msg.info('Testing using enviroment lighthouse using bash script');
+
+    function init(resolve, reject) {
       const jsonName = crypto.createHash('md5').update(url).digest('hex') + '.json';
       var yourscript = exec("lighthouse --verbose '" + url + "' --quiet --chrome-flags='--headless' --output=json --output-path=" + jsonName,
         (error, stdout, stderr) => {
-            if (error === null) {
-              const results = JSON.parse(fs.readFileSync(jsonName, 'utf8'));
-              delete results.artifacts;
-              setTimeout(function(){
-                msg.info('Deleting ' + jsonName);
-                fs.unlink(jsonName);
-              }, 1000);
-              resolve(results);
-            } else{
-              reject(error);
-            }
+          if (error === null) {
+            const results = JSON.parse(fs.readFileSync(jsonName, 'utf8'));
+            delete results.artifacts;
+            setTimeout(function () {
+              msg.info('Deleting ' + jsonName);
+              fs.unlink(jsonName);
+            }, 1000);
+            resolve(results);
+          } else {
+            reject(error);
+          }
         });
     }
+
     let promise = new Promise(init);
     return promise;
   }
-  
+
   const flags = {
-    chromeFlags: ['--headless'],
+    chromeFlags: ['--headless', 'no-sandbox'],
     handleSIGINT: true,
     maxConnectionRetries: 2
   };
