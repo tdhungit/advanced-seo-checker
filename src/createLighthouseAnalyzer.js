@@ -37,7 +37,7 @@ module.exports = () => {
      msg.info('Testing using enviroment lighthouse using bash script');
     function init(resolve, reject){
       const jsonName = crypto.createHash('md5').update(url).digest('hex') + '.json';
-      var yourscript = exec("lighthouse '" + url + "' --quiet --chrome-flags='--headless' --output=json --output-path=" + jsonName,
+      var yourscript = exec("lighthouse --verbose '" + url + "' --quiet --chrome-flags='--headless' --output=json --output-path=" + jsonName,
         (error, stdout, stderr) => {
             if (error === null) {
               const results = JSON.parse(fs.readFileSync(jsonName, 'utf8'));
