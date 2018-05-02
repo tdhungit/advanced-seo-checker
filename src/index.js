@@ -168,7 +168,7 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
           value: exists,
           weight: 1,
           score: exists ? 100 : 0,
-          impact: exists ? 100 : 0
+          impact: !exists ? 100 : 0
         });
       });
     };
@@ -188,7 +188,7 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
           value: exists,
           weight: 1,
           score: exists ? 100 : 0,
-          impact: exists ? 100 : 0
+          impact: !exists ? 100 : 0
         });
       });
     };
