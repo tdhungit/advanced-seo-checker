@@ -111,10 +111,10 @@ module.exports = (options) => {
       value: $('h1').length
     };
     if (result.value === 0) {
-      result.description = '0 pages don\'t have an h1 heading';
+      result.description = 'page doesn\'t contain any h1 heading';
     }
-    else {
-      result.description = '1 page have more than one H1 tag';
+    else if (result.value > 1) {
+      result.description = 'page have more than one H1 tag';
     }
     result.score = result.value === 1 ? 100 : 0;
     return result;
@@ -360,7 +360,7 @@ module.exports = (options) => {
           numberOfDuplicates++;
         }
       }
-      for(const key in list){
+      for (const key in list) {
         list[key].source = key;
         summary.issues.errors[skey].list.push(list[key]);
       }
