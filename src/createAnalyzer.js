@@ -246,6 +246,7 @@ module.exports = (options) => {
           let mobileFriendlyAudit = {};
           for (const auditRef of auditsRefs) {
             const audit = page.lighthousedata.audits[auditRef.id];
+            audit.weight = auditRef.weight;
             mobileFriendlyAudit = audit.id === 'mobile-friendly' ? audit : mobileFriendlyAudit;
             const issueCategory = getIssueCategory(audit.id);
 
