@@ -68,16 +68,6 @@ module.exports = (options) => {
       score: totalImgs.length ? 100 - (missingAltImages.length / totalImgs.length) * 100 : 100
     };
   };
-
-  const testMissingTitle = (page) => {
-    return {
-      description: !page.title ? '1 page don\'t have title tags' : '',
-      value: page.title,
-      weight: 1,
-      score: page.title ? 100 : 0
-    };
-  };
-
   const testTooMuchTextInTitle = (page) => {
     return {
       description: page.title ? '1 page have too much text within the title tags' : '1 pages don\'t have title tags',
@@ -194,6 +184,9 @@ module.exports = (options) => {
     for (const categoryKey in page.issues) {
       const category = page.issues[categoryKey];
       for (const issueKey in category) {
+        if (category[issueKey].impact) {
+          continue;
+        }
         category[issueKey].impact = (100 - category[issueKey].score) * category[issueKey].weight;
       }
     }
@@ -214,7 +207,6 @@ module.exports = (options) => {
 
       page.h1 = $('body h1:first-child').text().trim().replace('\n', '');
       page.issues.warnings['multiple-h1'] = countH1($);
-      page.issues.errors['missing-title'] = testMissingTitle(page);
       page.issues.warnings['too-much-text-in-title'] = testTooMuchTextInTitle(page);
       page.issues.warnings['missing-alt-attribute'] = testAccessibleImgs($);
       page.issues.warnings['doc-type'] = testDOCType(body);
@@ -247,6 +239,7 @@ module.exports = (options) => {
           for (const auditRef of auditsRefs) {
             const audit = page.lighthousedata.audits[auditRef.id];
             audit.weight = auditRef.weight;
+            audit.score *= 100;
             mobileFriendlyAudit = audit.id === 'mobile-friendly' ? audit : mobileFriendlyAudit;
             const issueCategory = getIssueCategory(audit.id);
 
