@@ -1,4 +1,4 @@
-const cheerio = require('cheerio')
+const cheerio = require('cheerio');
 const blc = require('broken-link-checker');
 const stringSimilarity = require('string-similarity');
 const createLHAnalyzer = require('./createLighthouseAnalyzer');
@@ -228,28 +228,24 @@ module.exports = (options) => {
       const promises = [createLHAnalyzer().analyzePage(url)];
       Promise.all(promises).then(function (results) {
         // page.blc = results[0];
-        // page.lighthousedata = results[1];
-        page.lighthousedata = results[0];
+        // page.lighthousedata = results[1].lhr;
+        page.lighthousedata = results[0].lhr;
 
         // page.issues.errors['internal-broken-links'] = page.blc.internalBrokenLinks;
         // page.issues.errors['external-broken-links'] = page.blc.externalBrokenLinks;
         // page.issues.errors['internal-broken-images'] = page.blc.internalBrokenImages;
         // page.issues.errors['external-broken-images'] = page.blc.externalBrokenImages;
-
         if (page.lighthousedata.error) {
 
         }
         else {
-          const seoCategory = page.lighthousedata.reportCategories.filter((auditCategory) => {
-            return auditCategory.id === 'seo';
-          })[0];
-          const bestPracticesCategory = page.lighthousedata.reportCategories.filter((auditCategory) => {
-            return auditCategory.id === 'best-practices';
-          })[0];
+          const seoCategory = page.lighthousedata.categories.seo;
+          const bestPracticesCategory = page.lighthousedata.categories['best-practices'];
 
-          const audits = seoCategory.audits.concat(bestPracticesCategory.audits);
+          const auditsRefs = seoCategory.auditRefs.concat(bestPracticesCategory.auditRefs);
           let mobileFriendlyAudit = {};
-          for (const audit of audits) {
+          for (const auditRef of auditsRefs) {
+            const audit = page.lighthousedata.audits[auditRef.id];
             mobileFriendlyAudit = audit.id === 'mobile-friendly' ? audit : mobileFriendlyAudit;
             const issueCategory = getIssueCategory(audit.id);
 
