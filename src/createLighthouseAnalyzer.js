@@ -26,12 +26,9 @@ module.exports = () => {
             reject(error);
           });
         }, 5000);
-
       }
-
       let promise = new Promise(init);
       return promise;
-
     });
   }
 
@@ -67,7 +64,7 @@ module.exports = () => {
   };
 
   const analyzePage = (url) => {
-    let trialsLimit = 2;
+    let trialsLimit = 3;
     let lunchingError = {};
     const init = (resolve, reject) => {
       trialsLimit--;
@@ -77,7 +74,7 @@ module.exports = () => {
         }).catch((error) => {
           lunchingError = error;
           msg.error(lunchingError);
-          init(resolve, reject);
+          reject(error);
         });
       }
       else {
@@ -103,6 +100,8 @@ module.exports = () => {
       }
       Promise.all(promises).then(function (summary) {
         resolve(summary);
+      }).catch(function (error) {
+        reject(error);
       });
     };
 

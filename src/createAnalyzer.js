@@ -281,6 +281,9 @@ module.exports = (options) => {
 
         msg.yellow('Analyzing: ' + url + ' was done');
         resolve(page);
+      }).catch(function (err) {
+        msg.error(err)
+        reject(err);
       });
     };
 
@@ -304,6 +307,9 @@ module.exports = (options) => {
         calculateIssuesImpact(summary);
         msg.green('All pages were analyzed');
         resolve(summary);
+      }).catch(function (err) {
+        msg.error(err);
+        reject(err);
       });
     };
 

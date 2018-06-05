@@ -69,7 +69,7 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     let res = {};
     const analyzer = createAnalyzer(options);
     urls = Array.isArray(urls) ? urls : [urls];
-    const onBodiesLoad = (bodies, resolve) => {
+    const onBodiesLoad = (bodies, resolve, reject) => {
       msg.appMsg('Retrieving urls bodies done');
       msg.appMsg('Start analyzing urls');
       const promises = [validateSitemap(), validateRobots(), testSSLCertificate(normalizeUrl(uri)),
@@ -88,12 +88,14 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
 
         msg.green('Analyzing urls done');
         resolve(res);
+      }).catch(function (err) {
+        reject(err);
       });
     };
 
     const init = (resolve, reject) => {
       if (bodies) {
-        onBodiesLoad(bodies, resolve);
+        onBodiesLoad(bodies, resolve, reject);
       }
       else {
         const bodiesPromises = [];
@@ -102,7 +104,7 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
         }
         msg.appMsg('Start retrieving urls bodies');
         Promise.all(bodiesPromises).then(function (bodies) {
-          onBodiesLoad(bodies, resolve);
+          onBodiesLoad(bodies, resolve, reject);
         });
       }
     };
