@@ -2,6 +2,7 @@ const lighthouse = require('lighthouse');
 const chromeLauncher = require('chrome-launcher');
 const msg = require('./helpers/msg-helper');
 const exec = require('child_process').exec;
+const execSync = require('child_process').execSync;
 const crypto = require('crypto');
 const fs = require('fs');
 
@@ -13,6 +14,7 @@ module.exports = () => {
       function init(resolve, reject) {
         msg.info('Waiting for Chrome instance to be ready');
         setTimeout(function () {
+          const hardKillCommand = 'kill -9 ' + chrome.pid;
           msg.info('Testing using lighthouse using nodejs');
           //Wait to make sure that chrome instance is there and ready to serve
           lighthouse(url, flags, config).then(results => {
@@ -20,13 +22,19 @@ module.exports = () => {
             delete results.artifacts;
             chrome.kill().then(() => {
               msg.info('Chrome instance was killed successfully');
+              execSync(hardKillCommand);
+              resolve(results);
+            }).catch((error) => {
+              execSync(hardKillCommand);
               resolve(results);
             });
           }).catch((error) => {
+            execSync(hardKillCommand);
             reject(error);
           });
         }, 5000);
       }
+
       let promise = new Promise(init);
       return promise;
     });
