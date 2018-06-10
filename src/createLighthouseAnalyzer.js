@@ -11,10 +11,18 @@ module.exports = () => {
     return chromeLauncher.launch(flags).then(chrome => {
       flags.port = chrome.port;
 
+      function hardKillChrome() {
+        const hardKillCommand = 'kill -9 ' + chrome.pid;
+        exec(hardKillCommand,
+          function (error, stdout, stderr) {
+            console.log('ALL CHROME INSTANCES WERE REMOVED');
+          });
+      }
+
       function init(resolve, reject) {
         msg.info('Waiting for Chrome instance to be ready');
         setTimeout(function () {
-          const hardKillCommand = 'kill -9 ' + chrome.pid;
+
           msg.info('Testing using lighthouse using nodejs');
           //Wait to make sure that chrome instance is there and ready to serve
           lighthouse(url, flags, config).then(results => {
@@ -22,14 +30,14 @@ module.exports = () => {
             delete results.artifacts;
             chrome.kill().then(() => {
               msg.info('Chrome instance was killed successfully');
-              execSync(hardKillCommand);
+              hardKillChrome();
               resolve(results);
             }).catch((error) => {
-              execSync(hardKillCommand);
+              hardKillChrome();
               resolve(results);
             });
           }).catch((error) => {
-            execSync(hardKillCommand);
+            hardKillChrome();
             reject(error);
           });
         }, 5000);
