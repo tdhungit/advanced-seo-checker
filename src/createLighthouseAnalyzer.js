@@ -15,12 +15,12 @@ module.exports = () => {
         const hardKillCommand = 'kill -9 ' + chrome.pid;
         exec(hardKillCommand,
           function (error, stdout, stderr) {
-            console.log('ALL CHROME INSTANCES WERE REMOVED');
+            console.log('CHROME INSTANCE WAS REMOVED: ' + chrome.pid);
           });
       }
 
       function init(resolve, reject) {
-        msg.info('Waiting for Chrome instance to be ready');
+        msg.info('Waiting for Chrome instance to be ready: ' + chrome.pid);
         setTimeout(function () {
 
           msg.info('Testing using lighthouse using nodejs');
