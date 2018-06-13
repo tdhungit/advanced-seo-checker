@@ -6,7 +6,7 @@ const execSync = require('child_process').execSync;
 const crypto = require('crypto');
 const fs = require('fs');
 
-module.exports = () => {
+module.exports = (options) => {
   function launchChromeAndRunLighthouse(url, flags = {}, config = null) {
     return chromeLauncher.launch(flags).then(chrome => {
       flags.port = chrome.port;
@@ -84,7 +84,10 @@ module.exports = () => {
     let lunchingError = {};
     const init = (resolve, reject) => {
       trialsLimit--;
-      if (trialsLimit === 0) {
+      if (!options.useTerminalOption && trialsLimit === 0) {
+        reject(lunchingError);
+      }
+      else if (trialsLimit === 0) {
         launchChromeAndRunLighthouseViaBash(url, flags).then(results => {
           resolve(results);
         }).catch((error) => {

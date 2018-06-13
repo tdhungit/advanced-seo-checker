@@ -13,7 +13,8 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
     ignoreSSLTest: true,
     ignoreRobotsTest: true,
     ignoreSitemapTest: true,
-    ignoreInternalPagesIssues: false
+    ignoreInternalPagesIssues: false,
+    useTerminalOption: false
   };
   const options = Object.assign({}, defaultOpts, opts);
   if (options.ignoreInternalPagesIssues) {

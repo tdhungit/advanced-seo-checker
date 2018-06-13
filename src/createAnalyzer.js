@@ -216,8 +216,8 @@ module.exports = (options) => {
         return resolve(page);
       }
 
-      // const promises = [discoverBrokenLinks(url, body), createLHAnalyzer().analyzePage(url)];
-      const promises = [createLHAnalyzer().analyzePage(url)];
+      // const promises = [discoverBrokenLinks(url, body), createLHAnalyzer(createLHAnalyzer).analyzePage(url)];
+      const promises = [createLHAnalyzer(options).analyzePage(url)];
       Promise.all(promises).then(function (results) {
         // page.blc = results[0];
         // page.lighthousedata = results[1].lhr;
