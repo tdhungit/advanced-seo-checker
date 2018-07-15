@@ -315,9 +315,9 @@ module.exports = (options) => {
           }
           page.metrics.summary = page.lighthousedata.audits['metrics'].details.items[0];
 
-          for (const category of page.lighthousedata.categories) {
-            page.scores[category.id] = category;
-            delete page.scores[category.id].auditRefs;
+          for (const categoryKey in page.lighthousedata.categories) {
+            page.scores[categoryKey] = page.lighthousedata.categories[categoryKey];
+            delete page.scores[categoryKey].auditRefs;
           }
           page.loadingTimeline = page.lighthousedata.audits['screenshot-thumbnails'];
           page.isMobileFriendly = !mobileFriendlyAudit.score;
