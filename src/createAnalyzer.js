@@ -237,6 +237,7 @@ module.exports = (options) => {
       page.author = $('meta[name=author]').attr('content') || null;
       page.keywords = $('meta[name=keywords]').attr('content') || null;
       page.issues = {errors: {}, warnings: {}, notices: {}};
+      page.scores = {};
       page.metrics = {
         'first-contentful-paint': null,
         'first-meaningful-paint': null,
@@ -248,7 +249,6 @@ module.exports = (options) => {
         'interactive': null,
         'mainthread-work-breakdown': null,
         'bootup-time': null,
-
       };
 
       page.h1 = $('body h1:first-child').text().trim().replace('\n', '');
@@ -315,6 +315,10 @@ module.exports = (options) => {
           }
           page.metrics.summary = page.lighthousedata.audits['metrics'].details.items[0];
 
+          for (const category of page.lighthousedata.categories) {
+            page.scores[category.id] = category;
+            delete page.scores[category.id].auditRefs;
+          }
           page.loadingTimeline = page.lighthousedata.audits['screenshot-thumbnails'];
           page.isMobileFriendly = !mobileFriendlyAudit.score;
         }
