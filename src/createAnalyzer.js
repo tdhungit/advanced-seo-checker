@@ -313,7 +313,7 @@ module.exports = (options) => {
           for (const metricKey in page.metrics) {
             page.metrics[metricKey] = page.lighthousedata.audits[metricKey];
           }
-          page.metrics.summary = page.lighthousedata.audits['metrics'].details.items;
+          page.metrics.summary = page.lighthousedata.audits['metrics'].details.items[0];
 
           page.loadingTimeline = page.lighthousedata.audits['screenshot-thumbnails'];
           page.isMobileFriendly = !mobileFriendlyAudit.score;
