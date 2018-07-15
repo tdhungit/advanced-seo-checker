@@ -1,5 +1,6 @@
 const cheerio = require('cheerio');
 const blc = require('broken-link-checker');
+const fs = require('fs');
 const stringSimilarity = require('string-similarity');
 const createLHAnalyzer = require('./createLighthouseAnalyzer');
 const msg = require('./helpers/msg-helper');
@@ -25,25 +26,57 @@ module.exports = (options) => {
     const categories = {
       'viewport': 'errors',
       'document-title': 'errors',
+      'duplicate-id': 'errors',
+      'html-has-lang': 'errors',
+      'html-lang-valid': 'errors',
       'meta-description': 'errors',
+      'render-blocking-resources': 'errors',
+      'unminified-css': 'errors',
+      'unminified-javascript': 'errors',
       'is-crawlable': 'errors',
       'hreflang': 'errors',
       'canonical': 'errors',
       'errors-in-console': 'errors',
-      'http-status-code': 'warnings',
+      'uses-optimized-images': 'errors',
+      'http-status-code': 'errors',
+      'uses-text-compression': 'warnings',
+      'uses-responsive-images': 'warnings',
+      'dome-size': 'warnings',
+      'unused-css-rules': 'warnings',
+      'offscreen-images': 'warnings',
+      'total-byte-weight': 'warnings',
+      'critical-request-chains': 'warnings',
       'link-text': 'warnings',
       'external-anchors-use-rel-noopener': 'warnings',
       'geolocation-on-start': 'warnings',
       'password-inputs-can-be-pasted-into': 'warnings',
+      'uses-rel-preload': 'warnings',
+      'uses-rel-preconnect': 'warnings',
+      'uses-webp-images': 'notices',
+      'content-width': 'notices',
+      'image-aspect-ratio': 'notices',
+      'deprecations': 'notices',
+      'service-worker': 'notices',
+      'works-offline': 'notices',
       'appcache-manifest': 'notices',
+      'robots-txt': 'notices',
+      'hreflang': 'notices',
+      'canonical': 'notices',
       'no-websql': 'notices',
       'is-on-https': 'notices',
       'uses-http2': 'notices',
+      'webapp-install-banner': 'notices',
+      'splash-screen': 'notices',
+      'themed-omnibox': 'notices',
+      'redirects-http': 'notices',
+      'redirects': 'notices',
+      'without-javascript': 'notices',
       'no-mutation-events': 'notices',
       'no-document-write': 'notices',
       'no-vulnerable-libraries': 'notices',
       'notification-on-start': 'notices',
       'deprecations': 'notices',
+      'link-name': 'notices',
       'manifest-short-name-length': 'notices'
     };
     return categories[id] ? categories[id] : 'notices';
@@ -204,6 +237,19 @@ module.exports = (options) => {
       page.author = $('meta[name=author]').attr('content') || null;
       page.keywords = $('meta[name=keywords]').attr('content') || null;
       page.issues = {errors: {}, warnings: {}, notices: {}};
+      page.metrics = {
+        'first-contentful-paint': null,
+        'first-meaningful-paint': null,
+        'load-fast-enough-for-pwa': null,
+        'speed-index': null,
+        'estimated-input-latency': null,
+        'time-to-first-byte': null,
+        'first-cpu-idle': null,
+        'interactive': null,
+        'mainthread-work-breakdown': null,
+        'bootup-time': null,
+
+      };
 
       page.h1 = $('body h1:first-child').text().trim().replace('\n', '');
       page.issues.warnings['multiple-h1'] = countH1($);
@@ -264,6 +310,12 @@ module.exports = (options) => {
             page.issues[issueCategory][audit.id] = audit;
           }
 
+          for (const metricKey in page.metrics) {
+            page.metrics[metricKey] = page.lighthousedata.audits[metricKey];
+          }
+          page.metrics.summary = page.lighthousedata.audits['metrics'].details.items;
+
+          page.loadingTimeline = page.lighthousedata.audits['screenshot-thumbnails'];
           page.isMobileFriendly = !mobileFriendlyAudit.score;
         }
 

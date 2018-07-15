@@ -1,6 +1,6 @@
 {
-  "_from": "advanced-seo-checker@1.4.5",
-  "_id": "advanced-seo-checker@1.4.5",
+  "_from": "advanced-seo-checker@1.4.6",
+  "_id": "advanced-seo-checker@1.4.6",
   "_inBundle": false,
   "_integrity": "sha512-6jQxZrgC9XgKwTUoVTaEO2D/+lOTHBjb+depW9MOMcO3C/GtOzL6Bsufw2FbwIxmWLOGZF1hGFr4JnietlBxWQ==",
   "_location": "/advanced-seo-checker",
@@ -103,5 +103,5 @@
   "scripts": {
     "test": "grunt nodeunit"
   },
-  "version": "1.4.5"
+  "version": "1.4.6"
 }
