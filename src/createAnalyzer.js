@@ -39,9 +39,10 @@ module.exports = (options) => {
       'errors-in-console': 'errors',
       'uses-optimized-images': 'errors',
       'http-status-code': 'errors',
+      'image-alt': 'warnings',
       'uses-text-compression': 'warnings',
       'uses-responsive-images': 'warnings',
-      'dome-size': 'warnings',
+      'dom-size': 'warnings',
       'unused-css-rules': 'warnings',
       'offscreen-images': 'warnings',
       'total-byte-weight': 'warnings',
@@ -82,25 +83,6 @@ module.exports = (options) => {
     return categories[id] ? categories[id] : 'notices';
   };
 
-  const testAccessibleImgs = ($) => {
-    const totalImgs = [], accessibleImgs = [], missingAltImages = [];
-    $('img').each(function (index) {
-      totalImgs.push($(this).html());
-      if ($(this).attr('alt') || $(this).attr('title')) {
-        accessibleImgs.push($(this).attr('src'));
-      }
-      else {
-        missingAltImages.push($(this).attr('src'));
-      }
-    });
-    return {
-      description: missingAltImages.length + ' images don\'t have alt attributes out of ' + totalImgs.length,
-      list: missingAltImages,
-      value: missingAltImages.length,
-      weight: 1,
-      score: totalImgs.length ? 100 - (missingAltImages.length / totalImgs.length) * 100 : 100
-    };
-  };
   const testTooMuchTextInTitle = (page) => {
     return {
       description: page.title ? '1 page have too much text within the title tags' : '1 pages don\'t have title tags',
@@ -254,7 +236,6 @@ module.exports = (options) => {
       page.h1 = $('body h1:first-child').text().trim().replace('\n', '');
       page.issues.warnings['multiple-h1'] = countH1($);
       page.issues.warnings['too-much-text-in-title'] = testTooMuchTextInTitle(page);
-      page.issues.warnings['missing-alt-attribute'] = testAccessibleImgs($);
       page.issues.warnings['doc-type'] = testDOCType(body);
 
       if (options.ignoreInternalPagesIssues) {
