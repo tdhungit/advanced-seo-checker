@@ -61,8 +61,6 @@ module.exports = (options) => {
       'works-offline': 'notices',
       'appcache-manifest': 'notices',
       'robots-txt': 'notices',
-      'hreflang': 'notices',
-      'canonical': 'notices',
       'no-websql': 'notices',
       'is-on-https': 'notices',
       'uses-http2': 'notices',
@@ -76,7 +74,6 @@ module.exports = (options) => {
       'no-document-write': 'notices',
       'no-vulnerable-libraries': 'notices',
       'notification-on-start': 'notices',
-      'deprecations': 'notices',
       'link-name': 'notices',
       'manifest-short-name-length': 'notices'
     };
@@ -249,6 +246,7 @@ module.exports = (options) => {
         // page.blc = results[0];
         // page.lighthousedata = results[1].lhr;
         page.lighthousedata = results[0].lhr;
+        page.body = JSON.parse(JSON.stringify(results[0].lhr));
 
         // page.issues.errors['internal-broken-links'] = page.blc.internalBrokenLinks;
         // page.issues.errors['external-broken-links'] = page.blc.externalBrokenLinks;
@@ -276,13 +274,10 @@ module.exports = (options) => {
               }
               audit.description = audit.result.description;
             }
-            audit.list = audit.extendedInfo && audit.extendedInfo.value ? audit.extendedInfo.value : [];
-            audit.list = audit.list.results ? audit.list.results : audit.list;
-
+            audit.list = audit.list ? audit.list : [];
             if (audit.details && audit.details.items) {
               for (const [index, item] of audit.details.items.entries()) {
-                audit.list[index] = audit.list[index] ? audit.list[index] : {};
-                audit.list[index] = Object.assign({}, audit.list[index], item[0]);
+                audit.list.push(item.node ? item.node : item);
               }
             }
             delete audit.details;
