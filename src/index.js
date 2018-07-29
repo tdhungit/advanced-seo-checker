@@ -106,6 +106,8 @@ module.exports = function AdvancedSEOChecker(uri, opts) {
         msg.appMsg('Start retrieving urls bodies');
         Promise.all(bodiesPromises).then(function (bodies) {
           onBodiesLoad(bodies, resolve, reject);
+        }).catch(function (error) {
+          msg.error(error);
         });
       }
     };
