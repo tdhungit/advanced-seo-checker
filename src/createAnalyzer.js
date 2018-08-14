@@ -212,8 +212,10 @@ module.exports = (options) => {
     const init = (resolve, reject) => {
 
       page.title = $('title').text() || null;
+      page.headers = {h1: [], h2: [], h3: [], h4: [], h5: [], h6: []}
       page.description = $('meta[name=description]').attr('content') || null;
       page.author = $('meta[name=author]').attr('content') || null;
+      page.canonical = $('link[rel=canonical]').attr('href').trim().replace('\n', '') || null;
       page.keywords = $('meta[name=keywords]').attr('content') || null;
       page.issues = {errors: {}, warnings: {}, notices: {}};
       page.scores = {};
@@ -230,6 +232,11 @@ module.exports = (options) => {
         'bootup-time': null,
       };
 
+      for (let i = 1; i <= 6; i++) {
+        $('body h' + i).each(function () {
+          page.headers['h' + i].push($(this).text().trim().replace('\n', ''));
+        });
+      }
       page.h1 = $('body h1:first-child').text().trim().replace('\n', '');
       page.issues.warnings['multiple-h1'] = countH1($);
       page.issues.warnings['too-much-text-in-title'] = testTooMuchTextInTitle(page);
