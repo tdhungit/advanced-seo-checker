@@ -215,7 +215,9 @@ module.exports = (options) => {
       page.headers = {h1: [], h2: [], h3: [], h4: [], h5: [], h6: []}
       page.description = $('meta[name=description]').attr('content') || null;
       page.author = $('meta[name=author]').attr('content') || null;
-      page.canonical = $('link[rel=canonical]').attr('href').trim().replace('\n', '') || null;
+
+      page.canonical = $('link[rel=canonical]').attr('href') || null;
+      page.canonical = page.canonical ? page.canonical.trim().replace('\n', '') : page.canonical;
       page.keywords = $('meta[name=keywords]').attr('content') || null;
       page.issues = {errors: {}, warnings: {}, notices: {}};
       page.scores = {};
@@ -234,7 +236,8 @@ module.exports = (options) => {
 
       for (let i = 1; i <= 6; i++) {
         $('body h' + i).each(function () {
-          page.headers['h' + i].push($(this).text().trim().replace('\n', ''));
+          const text = $(this).text();
+          page.headers['h' + i].push(text ? text.trim().replace('\n', ''): text);
         });
       }
       page.h1 = $('body h1:first-child').text().trim().replace('\n', '');
