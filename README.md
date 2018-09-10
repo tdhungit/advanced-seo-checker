@@ -4,7 +4,7 @@
 
 ## Usage
 
-Install with npm `npm install advanced-seo-checker --save`
+Install with npm `npm install https://github.com/tdhungit/advanced-seo-checker.git --save`
 
 ### Getting started
 
@@ -16,8 +16,8 @@ The `analyze` method takes the URLs' list as a parameter to start analyzing them
 
 ```js
 const SEOChecker = require('advanced-seo-checker');
-let baseURL = 'http://hazemhagrass.com';
-let urls = [baseURL, 'http://hazemhagrass.com/blog'];
+let baseURL = 'https://youaddon.com';
+let urls = [baseURL, 'https://youaddon.com/category/1/themes'];
 let crawler = SEOChecker(baseURL, {});
 crawler.analyze(urls).then(function (summary) {
   let util = require('util');
@@ -34,7 +34,7 @@ Most of the items in the returned object are self explanatory. Here are the ones
 
 ## Development
 
-1. Clone the repository `git clone https://github.com/hazemhagrass/advanced-seo-checker && cd advanced-seo-checker`
+1. Clone the repository `git clone https://github.com/tdhungit/advanced-seo-checker.git && cd advanced-seo-checker`
 2. Install dependencies `npm install`
 
 Now you can develop!

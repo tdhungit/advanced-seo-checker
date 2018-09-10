@@ -74,7 +74,7 @@ module.exports = (options) => {
   }
 
   const flags = {
-    chromeFlags: ['--headless', 'no-sandbox'],
+    chromeFlags: ['--headless', '--no-sandbox'],
     handleSIGINT: true,
     maxConnectionRetries: 2
   };
